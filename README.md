@@ -10,7 +10,7 @@
 
 **Agentic Readiness Assessment** is an agent plugin that evaluates a software repository for readiness to be developed and maintained by AI coding agents. It inspects the repository in place and produces an evidence-based readiness scorecard together with actionable recommendations.
 
-Built by [Exadel](https://exadel.com/), where we run it across client codebases before putting AI agents to work in them. If you want the short version of what we do with the results: [fix the backlog](https://exadel.com/services/ai-enabled-product-engineering/), [assess a whole portfolio](https://exadel.com/services/ai-maturity-readiness-assessment/), or [put an AI teammate on the repo](https://exadel.com/solutions/exadel-colleague/).
+Built by [Exadel](https://exadel.com/). If you want the longer version of what we do with results like these: [fix the backlog](https://exadel.com/services/ai-enabled-product-engineering/) or [assess a whole portfolio](https://exadel.com/services/ai-maturity-readiness-assessment/).
 
 ## Description
 
@@ -51,9 +51,9 @@ The plugin ships a single Agent Skill, [`agentic-readiness-assessment`](skills/a
 
 ## Supported clients
 
-Cursor is the supported client today, and the only one the assessment has been tested against.
+This is a skill, not a marketplace-specific plugin. It is written in the open [Agent Skills](https://agentskills.io/specification) format and ships with a portable [Agent Plugins](https://agent-plugins.org/specification) manifest, so any agent that reads those formats can pick it up.
 
-Claude Code, GitHub Copilot CLI and Gemini are planned targets. The plugin is built on the portable [Agent Plugins](https://agent-plugins.org/specification) manifest and the open [Agent Skills](https://agentskills.io/specification) format under `skills/`, so those clients are a packaging step rather than a rewrite: the skill content does not move.
+We are working towards listing it in every major marketplace, Cursor and Claude Code first, with the others and the community marketplaces to follow.
 
 ## Installation
 
@@ -99,7 +99,7 @@ Nothing else in your repository is changed. The one exception is the probe, a si
 
 ## System Requirements
 
-- Cursor (see [Supported clients](#supported-clients)).
+- An agent client that reads the Agent Skills format (see [Supported clients](#supported-clients)).
 - No additional runtime dependencies. The skill uses prompt-driven analysis only.
 
 ## Data handling and privacy
@@ -175,7 +175,7 @@ Those are the questions people ask us next, so we do them as work:
 
 - **Working the backlog.** [AI-Enabled Product Engineering](https://exadel.com/services/ai-enabled-product-engineering/): engineers who do the remediation alongside your team.
 - **A portfolio instead of a repository.** [AI Maturity & Readiness Assessment](https://exadel.com/services/ai-maturity-readiness-assessment/): the organization-level version of this report, covering people and process as well as code.
-- **Once the repositories are ready.** [Exadel Colleague](https://exadel.com/solutions/exadel-colleague/): an AI teammate that takes work from your backlog and opens pull requests your engineers review.
+- **Once the repositories are ready.** [Exadel Colleague](https://exadel.com/solutions/exadel-colleague/): the AI teammate we put to work inside them.
 
 If any of that would help: [exadel.com/contact](https://exadel.com/contact/).
 
