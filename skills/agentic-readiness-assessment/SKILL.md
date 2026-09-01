@@ -11,13 +11,7 @@ license: Apache-2.0
 
 # Agentic Readiness Assessment
 
-**Prompt version 4.1.** Record this version in the report run block so reports produced by different revisions stay comparable.
-
-<!--
-Maintainers: when to bump major versus minor is documented in README.md under
-"Prompt Versioning". Describe the change in the commit message, not in this file.
-The change history lives in git — `git log --follow agentic_readiness_prompt.md`.
--->
+Read the `version` field of the plugin's `plugin.json` and record it as `prompt_version` in the report run block, so reports produced by different revisions stay comparable. Write `unknown` if the manifest cannot be read.
 
 ## Objective
 

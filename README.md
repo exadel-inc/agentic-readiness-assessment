@@ -57,6 +57,28 @@ Ask your agent for an assessment from inside the repository you want to evaluate
 
 <!-- TODO: list known failure cases, e.g. very large monorepos, unsupported languages, missing CI configuration. -->
 
+## Versioning
+
+The `version` field in [`plugin.json`](plugin.json) is the single source of truth. The skill does not carry its own version: it reads the manifest and records that value as `prompt_version` in the run block of every generated report, so any report can be traced back to the revision that produced it.
+
+The version is currently `4.1.0`. `MAJOR.MINOR` continues the assessment prompt's own revision history, which predates this repository, so reports produced here stay on one timeline with reports produced by earlier revisions of the prompt. `PATCH` covers packaging changes that leave the prompt untouched.
+
+Bump it as follows:
+
+| Change | Bump | Example |
+| --- | --- | --- |
+| The report contract breaks: scoring areas or weights, gates, readiness thresholds, or report sections change such that scores are no longer comparable | major | `4.1.0` → `5.0.0` |
+| The prompt changes while the report contract holds | minor | `4.1.0` → `4.2.0` |
+| Packaging, README, or manifest changes only, with no change to prompt semantics | patch | `4.1.0` → `4.1.1` |
+
+Scores are directly comparable across reports sharing the same `MAJOR.MINOR`. A minor bump may shift scores, so compare across one with care; a major bump breaks the contract, so do not compare across it at all.
+
+Describe what changed in the commit message and in [CHANGELOG.md](CHANGELOG.md), not inside `SKILL.md`. The revision history lives in git:
+
+```sh
+git log --follow skills/agentic-readiness-assessment/SKILL.md
+```
+
 ## Documentation
 
 - [Skill definition](skills/agentic-readiness-assessment/SKILL.md)
