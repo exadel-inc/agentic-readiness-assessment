@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+*.swp
+
+# Python (skill scripts)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (skill scripts)
+node_modules/

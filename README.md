@@ -1,55 +1,70 @@
-# SOLUTION NAME
-![GitHub contributors](https://img.shields.io/github/contributors/exadel-inc/repository-template)
-![GitHub Repo stars](https://img.shields.io/github/stars/exadel-inc/repository-template?style=plastic)
-![GitHub Repo forks](https://img.shields.io/github/forks/exadel-inc/repository-template?style=plastic)
-![GitHub issues](https://img.shields.io/github/issues/exadel-inc/repository-template)
+# Agentic Readiness Assessment
+
+![GitHub contributors](https://img.shields.io/github/contributors/exadel-inc/agentic-readiness-assessment)
+![GitHub Repo stars](https://img.shields.io/github/stars/exadel-inc/agentic-readiness-assessment?style=plastic)
+![GitHub Repo forks](https://img.shields.io/github/forks/exadel-inc/agentic-readiness-assessment?style=plastic)
+![GitHub issues](https://img.shields.io/github/issues/exadel-inc/agentic-readiness-assessment)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ![](logo.png)
 
-**SOLUTION NAME** is a tool or something else. Need to write few words about solution and short description of targets which solution solve.
+**Agentic Readiness Assessment** is an agent plugin that evaluates a software repository for readiness to be developed and maintained by AI coding agents. It inspects the repository in place and produces an evidence-based readiness scorecard together with actionable recommendations.
 
 ## Description
 
-A full description of the solution, features, benefits, basic functionality, goals with screenshots of the results, screenshots of the product user interface should be located here.
+<!-- TODO: describe the readiness areas, the scoring model, and what the generated report looks like. -->
 
-[![Solution Screen Shot][product-screenshot]](https://example.com)
+The plugin ships a single Agent Skill, [`agentic-readiness-assessment`](skills/agentic-readiness-assessment/SKILL.md). The skill runs entirely locally: it reads the repository in your working directory, requires no backend or MCP server, and sends no repository contents anywhere.
 
-Additional necessary information about the solution
+## Supported clients
 
-## System Requirements
-
-This is an example of how to list things you need to use the software and how to install them.
- - npm ```npm install npm@latest -g```
+Cursor is the supported client. The plugin uses the portable [Agent Plugins](https://agent-plugins.org/specification) manifest and the open [Agent Skills](https://agentskills.io/specification) format under `skills/`, so the same repository can be extended to other clients later without moving the skill content.
 
 ## Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/your_username_/Project-Name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```JS
-   const API_KEY = 'ENTER YOUR API';
-   ```
+Once the plugin is published, install it from the [Cursor marketplace](https://cursor.com/marketplace).
+
+To try it before publication, clone the repository and point Cursor at your local copy:
+
+```sh
+git clone https://github.com/exadel-inc/agentic-readiness-assessment.git
+```
+
+<!-- TODO: confirm and document the local-install step for Cursor. -->
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+Ask your agent for an assessment from inside the repository you want to evaluate:
+
+- "Run an agentic readiness assessment on this repository."
+- "Generate an AI-readiness scorecard for this codebase."
+- "How ready is this repo for AI coding agents, and what should we fix first?"
+
+<!-- TODO: document the generated files, the output format, and any inputs the skill accepts. -->
+
+## System Requirements
+
+- Cursor (see [Supported clients](#supported-clients)).
+- No additional runtime dependencies. The skill uses prompt-driven analysis only.
+
+## Data handling and privacy
+
+- The skill performs read-only analysis of the repository in the current working directory.
+- No repository contents are transmitted to any external service by the plugin itself. Your agent client's own model requests are subject to that client's privacy policy.
+- The plugin contains no credentials and requires none.
+
+## Limitations
+
+<!-- TODO: list known failure cases, e.g. very large monorepos, unsupported languages, missing CI configuration. -->
 
 ## Documentation
 
-You can find the documentation [in the project's Wiki](#).  
+- [Skill definition](skills/agentic-readiness-assessment/SKILL.md)
+- [Changelog](CHANGELOG.md)
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are welcomed and greatly appreciated. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -57,15 +72,12 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-Contributions are welcomed and greatly appreciated.
 After creating your first contributing PR you will be requested to sign our Contributor License Agreement by commenting your PR with a special message.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the Apache License 2.0. See [LICENSE](LICENSE) for more information.
 
 ## Contact
 
-Messengers and other contacts
-
-[product-screenshot]: screenshot.png
+<!-- TODO: add maintainer contacts. -->
