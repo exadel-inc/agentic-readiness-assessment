@@ -1,11 +1,5 @@
 # Agentic Readiness Assessment
 
-![GitHub contributors](https://img.shields.io/github/contributors/exadel-inc/agentic-readiness-assessment)
-![GitHub Repo stars](https://img.shields.io/github/stars/exadel-inc/agentic-readiness-assessment?style=plastic)
-![GitHub Repo forks](https://img.shields.io/github/forks/exadel-inc/agentic-readiness-assessment?style=plastic)
-![GitHub issues](https://img.shields.io/github/issues/exadel-inc/agentic-readiness-assessment)
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
-
 ![](logo.png)
 
 **Agentic Readiness Assessment** is an agent plugin that evaluates a software repository for readiness to be developed and maintained by AI coding agents. It inspects the repository in place and produces an evidence-based readiness scorecard together with actionable recommendations.
