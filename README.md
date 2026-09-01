@@ -51,7 +51,7 @@ The plugin ships a single Agent Skill, [`agentic-readiness-assessment`](skills/a
 
 ## Supported clients
 
-This is a skill, not a marketplace-specific plugin. It is written in the open [Agent Skills](https://agentskills.io/specification) format and ships with a portable [Agent Plugins](https://agent-plugins.org/specification) manifest, so any agent that reads those formats can pick it up.
+This is a skill is written in the open [Agent Skills](https://agentskills.io/specification) format and ships with a portable [Agent Plugins](https://agent-plugins.org/specification) manifest, so any agent that reads those formats can pick it up.
 
 We are working towards listing it in every major marketplace, Cursor and Claude Code first, with the others and the community marketplaces to follow.
 
