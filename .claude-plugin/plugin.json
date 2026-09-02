@@ -1,12 +1,14 @@
 {
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "agentic-readiness-assessment",
+  "displayName": "Agentic Readiness Assessment",
   "version": "4.1.1",
   "description": "Evaluates a software repository for readiness to be developed and maintained by AI coding agents, and reports an evidence-based readiness scorecard.",
   "author": {
     "name": "Exadel",
     "url": "https://exadel.com"
   },
+  "homepage": "https://github.com/exadel-inc/agentic-readiness-assessment",
   "repository": "https://github.com/exadel-inc/agentic-readiness-assessment",
   "license": "Apache-2.0",
   "keywords": [
