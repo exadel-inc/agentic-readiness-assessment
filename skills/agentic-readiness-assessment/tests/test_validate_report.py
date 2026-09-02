@@ -41,6 +41,25 @@ AREAS = (
     ("Context economy", 5),
 )
 FIX_FIELDS = ("Problem", "Blocks", "Evidence", "Priority", "Owner", "Target", "Fix", "Verify", "Level")
+GLOSSARY = """| Term | Meaning |
+|---|---|
+| Area | One of 14 scored readiness dimensions. Each has a weight shown as `Max`. |
+| Gate | One of 4 mandatory checks. A gate's result **is** its anchor area's score, not a separate number. Gates 1–3 pass only at full points. |
+| Probe | Gate 4. A deliberate small defect introduced and reverted, to test whether the repository's own verification catches a real break. |
+| `F-nn` | A Fix Record: one stable ID per problem, holding the finding and its fix together. |
+| Priority | P0 stops unattended work and needs a human. P1 lets the agent proceed incorrectly or unvalidated. P2 costs avoidable time or clarity. |
+| Owner | Who fixes it: `repo`, `agent-environment` (the agent's image or toolchain), `platform` (org or infra config), or `external-service`. |
+| Readiness status | Per area: Verified (full points), Partial (half, rounded down), Repository-blocked (0), or N/A (excluded from the maximum). |
+| Verification state | How the evidence was obtained: Executed, Executed (unfrozen fallback), CI-proven, Environment-blocked, Not run: unsafe, or Not applicable. |
+| Level | What a fix changes: `code`, `control`, `docs`, or `instructions`. |
+| Normalized score | `points earned / applicable maximum * 100`. The applicable maximum is 105 minus the weight of every N/A area, so it is rarely 100. |
+| Repository blocker | The repository itself is missing, wrong, unsafe, or contradictory. Counts against readiness. |
+| Environment blocker | The repository documents enough, but this audit machine lacked a tool, service, or permission. Caps confidence; never a full zero. |
+| Enforced control | Something that actually fails when violated. A rule that lives only in prose is documented guidance, not an enforced control. |
+| Negative control | A safety defect such as a permission bypass, allow-all policy, unguarded secret file, or committed plaintext credential. Caps area 13 at 2. |
+| Unfrozen fallback | The locked install failed, so a non-mutating unlocked install was used instead. Valid evidence, but caps the setup area at half. |
+
+Gate 3 anchor: Area 5 — unit tests are the primary verification surface for this repository."""
 
 
 def run_scope(*, raw_total: int = 105, normalized_score: int = 100, setup_score: int = 10) -> str:
@@ -94,7 +113,7 @@ def fix_records(*, complete: bool = True) -> str:
     return "\n".join(body)
 
 
-def report(*, sections: tuple[str, ...] = SECTIONS, run_scope_body: str | None = None, glossary: str = "| Term | Meaning |\n| --- | --- |", scorecard_body: str | None = None, fixes: str | None = None) -> str:
+def report(*, sections: tuple[str, ...] = SECTIONS, run_scope_body: str | None = None, glossary: str = GLOSSARY, scorecard_body: str | None = None, fixes: str | None = None) -> str:
     bodies = {
         "Run and Scope": run_scope() if run_scope_body is None else run_scope_body,
         "Glossary": glossary,
@@ -127,16 +146,27 @@ class ValidateReportTests(unittest.TestCase):
         self.assertIn("sections are not in the required order", self.validate(report(sections=tuple(sections))))
 
     def test_rejects_an_unreadable_report(self) -> None:
-        errors = validate_report.validate(Path("does-not-exist.md"))
-        self.assertEqual(errors, ["cannot read report: does-not-exist.md"])
+        self.assertEqual(validate_report.validate(Path("does-not-exist.md")), ["cannot read report: does-not-exist.md"])
 
     def test_rejects_glossary_text_that_is_not_a_header_row(self) -> None:
         errors = self.validate(report(glossary="The required header is | Term | Meaning |."))
         self.assertIn("missing glossary table header", errors)
 
+    def test_rejects_an_incomplete_fixed_glossary(self) -> None:
+        errors = self.validate(report(glossary=GLOSSARY.replace("| Probe |", "| Test probe |")))
+        self.assertIn("glossary does not match the fixed table", errors)
+
+    def test_rejects_a_missing_gate_three_anchor_sentence(self) -> None:
+        errors = self.validate(report(glossary=GLOSSARY.rsplit("\n\n", 1)[0]))
+        self.assertIn("missing Gate 3 anchor sentence", errors)
+
     def test_rejects_a_yaml_block_outside_run_and_scope(self) -> None:
         malformed = report(run_scope_body="Content").replace("## Confidence and Limits\n\nContent", f"## Confidence and Limits\n\n{run_scope()}")
         self.assertIn("missing Run and Scope YAML block", self.validate(malformed))
+
+    def test_rejects_run_and_scope_keys_out_of_order(self) -> None:
+        malformed = run_scope().replace("audited_by: agent\nprompt_version: 4.4.0", "prompt_version: 4.4.0\naudited_by: agent")
+        self.assertIn("Run and Scope keys are not in the required order", self.validate(report(run_scope_body=malformed)))
 
     def test_rejects_a_missing_gate_map_entry(self) -> None:
         malformed = run_scope().replace("  probe:\n    result: pass\n", "")
@@ -162,6 +192,16 @@ class ValidateReportTests(unittest.TestCase):
 
     def test_rejects_an_incomplete_fix_record(self) -> None:
         self.assertIn("F-01 is missing Fix Record field: Level", self.validate(report(fixes=fix_records(complete=False))))
+
+    def test_rejects_an_index_id_without_one_matching_record(self) -> None:
+        malformed = fix_records().replace("### F-01", "### F-02")
+        errors = self.validate(report(fixes=malformed))
+        self.assertIn("index Fix Record F-01 does not have exactly one matching record", errors)
+        self.assertIn("Fix Record F-02 is not declared in the index", errors)
+
+    def test_rejects_a_malformed_fix_record_declaration(self) -> None:
+        malformed = fix_records().replace("### F-01", "### F-1")
+        self.assertIn("malformed Fix Record declaration: F-1", self.validate(report(fixes=malformed)))
 
 
 if __name__ == "__main__":
