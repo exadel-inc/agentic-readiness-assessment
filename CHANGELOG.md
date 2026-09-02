@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Assessment prompt imported from its source repository.
 - Example report under `examples/`, from a run against a Next.js application, linked from the README.
 
+### Removed
+
+- `screenshot.png`, an unused placeholder carried over from the repository template.
+
 ### Changed
 
 - The version in `plugin.json` is now the single source of truth for the skill, set to `4.1.0` so that `MAJOR.MINOR` continues the assessment prompt's prior revision history. The skill reads it and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).

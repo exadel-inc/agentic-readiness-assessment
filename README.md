@@ -59,8 +59,6 @@ To try it before publication, clone the repository and point Cursor at your loca
 git clone https://github.com/exadel-inc/agentic-readiness-assessment.git
 ```
 
-<!-- TODO: confirm and document the local-install step for Cursor. -->
-
 ## Getting Started
 
 Ask your agent for an assessment from inside the repository you want to evaluate:
