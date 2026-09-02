@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial plugin scaffold with the `agentic-readiness-assessment` skill.
 - Assessment prompt imported from its source repository.
+- Example report under `examples/`, from a run against a Next.js application, linked from the README.
 
 ### Changed
 

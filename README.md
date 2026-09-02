@@ -91,6 +91,12 @@ Sections 1 to 8 are the decision document, ordered so a reader has the whole rea
 
 Nothing else in your repository is changed. The one exception is the probe, a single reversible edit that is reverted before the report is written.
 
+## Example report
+
+[`examples/fs-demo-project/agentic-readiness.md`](examples/fs-demo-project/agentic-readiness.md) is a full run against a Next.js 14 application with Prisma and PostgreSQL. It scored 71 of 100, **Partially ready**, at Medium confidence. The golden path and the test suite verified cleanly; a port conflict on the audit host blocked the database and, with it, the probe. That is the useful case to read, because the report separates what the repository is missing from what this particular machine could not prove.
+
+More runs, and what was redacted before publishing, in [`examples/`](examples/README.md).
+
 ## System Requirements
 
 - An agent client that reads the Agent Skills format (see [Supported clients](#supported-clients)).
@@ -141,6 +147,7 @@ git log --follow skills/agentic-readiness-assessment/SKILL.md
 ## Documentation
 
 - [Skill definition](skills/agentic-readiness-assessment/SKILL.md)
+- [Example reports](examples/README.md)
 - [Changelog](CHANGELOG.md)
 
 ## Contributing
