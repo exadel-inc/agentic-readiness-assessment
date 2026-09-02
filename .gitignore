@@ -5,6 +5,9 @@
 .idea/
 *.swp
 
+# Local git worktrees
+.worktrees/
+
 # Python (skill scripts)
 __pycache__/
 *.py[cod]
