@@ -48,6 +48,8 @@ Classify commands before execution:
 - **privileged:** Requires root, `sudo`, or machine-wide changes. Do not run.
 - **paid:** Calls a billed external service. Do not run.
 
+After the report's single write, run `python3 skills/agentic-readiness-assessment/scripts/validate_report.py reports/agentic-readiness.md`. This is a `local-read` command: it validates the report contract without changing the repository. Record it in Commands Executed.
+
 Being documented does not make a command safe. A refused command is not a skipped category: record it, name its class, and score on the safe evidence that remains.
 
 ### Dependency Installation
@@ -383,7 +385,8 @@ Re-read the report and verify:
 - the probe section reports either a completed probe or an explicit reason it was not attempted;
 - the report contains only commands actually executed or explicitly refused as unsafe;
 - the final worktree differs from the baseline only by the report and known audit-created ignored artifacts, with the probe edit reverted.
+- `python3 skills/agentic-readiness-assessment/scripts/validate_report.py reports/agentic-readiness.md` exits 0.
 
-You may make one corrective rewrite if a check failed; say that you rewrote it, then stop.
+If the validator fails, make one corrective rewrite of the report and run it once more. Record any unresolved validator errors in Confidence and Limits; say that you rewrote it, then stop.
 
 Then respond with the report path, score, overall status, confidence, failed gates, the probe result, and the first repository-owned fix.

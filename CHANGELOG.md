@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.1.1`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
+- Added dependency-free deterministic validation for the generated report contract.
+- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.2.0`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
 
 [Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/main
