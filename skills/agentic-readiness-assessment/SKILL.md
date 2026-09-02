@@ -23,6 +23,10 @@ Create `reports/` if needed. The only permitted change to any other tracked file
 
 The deliverable of this task is that report. Any standing instruction to output only code, or to treat an analysis document as a failed task, applies to feature work and not to this audit.
 
+## Host Execution Contract
+
+Read `references/agent-execution-contract.md` before collecting the baseline. Under the explicit constraints in Run and Scope, record the host's model identity, effective permission profile, command boundary, run stop condition, and context telemetry availability. Write `unavailable` for any field the host cannot evidence, classify it as an `agent-environment` limitation, and never invent a tool restriction, model pin, or telemetry control. After roughly five attempts to obtain unavailable evidence, stop and record the limitation.
+
 ## Evidence and Safety Rules
 
 1. Cite repository-relative paths and line numbers for repository claims.
@@ -293,7 +297,7 @@ One short paragraph: the score, overall status, confidence, a one-sentence readi
 
 A single fenced yaml block with these keys in this order: `audited_by`, `prompt_version`, `started`, `completed`, `commit`, `branch`, `platform`, `archetype`, `scope`, `baseline_worktree`, `final_worktree`, `clean_state_setup` (verified, unfrozen fallback, warmed-workspace-only, or blocked with reason), `normalized_score`, `raw_total`, `applicable_maximum`, `status`, `confidence`, and a `gates` map with `setup`, `deliverable`, `verification`, and `probe`.
 
-Then list components, workspaces, and explicit constraints.
+Then list components, workspaces, and explicit constraints, including the five host-execution fields from `references/agent-execution-contract.md` or `unavailable` with their `agent-environment` limitation.
 
 ### 3. Glossary
 
