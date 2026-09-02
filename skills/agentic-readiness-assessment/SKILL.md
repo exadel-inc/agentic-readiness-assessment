@@ -305,7 +305,7 @@ Then list components, workspaces, and explicit constraints, including the five h
 
 ### 3. Glossary
 
-Reproduce the table below verbatim. It is fixed boilerplate: do not add terms, reword definitions, or expand it with repository-specific detail. Immediately below the table, add exactly one sentence in this format: `Gate 3 anchor: Area <4, 5, or 6> — <why this is the primary verification surface>.`
+Reproduce the table below verbatim. It is fixed boilerplate: do not add terms, reword definitions, or expand it with repository-specific detail. Immediately below the table, add exactly one sentence in this format: `Gate 3 anchor: Area <4, 5, or 6> — <why this is the primary verification surface>.` Add no other content to this section.
 
 | Term | Meaning |
 |---|---|
@@ -345,7 +345,12 @@ Open with a compact index table, repository-owned fixes first, then environment 
 
 `ID | Priority / Owner | Problem and blocked capability | Fix and target | Verify`
 
-Every cell must be actionable on its own. Each `F-nn` ID appears exactly once in the index and has exactly one matching record. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. Start each record with `### F-nn`, then put each field on its own line as `**Problem:**`, `**Blocks:**`, `**Evidence:**`, `**Priority:**`, `**Owner:**`, `**Target:**`, `**Fix:**`, `**Verify:**`, and `**Level:**`. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
+Every cell must be actionable on its own. The section begins with this exact compact-index header and separator, even when there are no Fix Records:
+
+`| ID | Priority / Owner | Problem and blocked capability | Fix and target | Verify |`
+`| --- | --- | --- | --- | --- |`
+
+Each `F-nn` ID appears exactly once in the index and has exactly one matching record. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. Start each record with `### F-nn`, then put each field on its own line as `**Problem:**`, `**Blocks:**`, `**Evidence:**`, `**Priority:**`, `**Owner:**`, `**Target:**`, `**Fix:**`, `**Verify:**`, and `**Level:**`. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
 
 ### 7. What Can Be Delegated Today
 

@@ -58,6 +58,8 @@ AREAS = (
 )
 FIX_RECORD_FIELDS = ("Problem", "Blocks", "Evidence", "Priority", "Owner", "Target", "Fix", "Verify", "Level")
 AREA_STATUSES = ("Verified", "Partial", "Repository-blocked", "N/A")
+INDEX_HEADER = "| ID | Priority / Owner | Problem and blocked capability | Fix and target | Verify |"
+INDEX_SEPARATOR = "| --- | --- | --- | --- | --- |"
 GLOSSARY_TABLE = """| Term | Meaning |
 |---|---|
 | Area | One of 14 scored readiness dimensions. Each has a weight shown as `Max`. |
@@ -104,13 +106,15 @@ def allowed_value(yaml: str, key: str, values: tuple[str, ...], errors: list[str
         errors.append(f"invalid Run and Scope {key}: {match.group(1)}")
 
 
-def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int], int, int]:
+def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int], dict[int, str], dict[int, int], int, int]:
     scorecard = section(content, "Readiness Scorecard")
     scores: dict[int, int] = {}
+    statuses: dict[int, str] = {}
+    maximums: dict[int, int] = {}
     total = 0
     applicable_maximum = 0
     if scorecard is None:
-        return scores, total, applicable_maximum
+        return scores, statuses, maximums, total, applicable_maximum
 
     for number, (name, maximum) in enumerate(AREAS, start=1):
         match = re.search(
@@ -123,6 +127,8 @@ def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int],
             continue
         status = match.group(1).strip()
         score = match.group(2).strip()
+        statuses[number] = status
+        maximums[number] = maximum
         if status not in AREA_STATUSES:
             errors.append(f"invalid status for {name}: {status}")
         expected = {
@@ -140,15 +146,16 @@ def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int],
             continue
         scores[number] = expected
         total += expected
-    return scores, total, applicable_maximum
+    return scores, statuses, maximums, total, applicable_maximum
 
 
-def validate_gates(yaml: str, scores: dict[int, int], errors: list[str]) -> None:
+def validate_gates(yaml: str, scores: dict[int, int], errors: list[str]) -> tuple[dict[str, int], str | None]:
     expected = {
         "setup": (2,),
         "deliverable": (3,),
         "verification": (4, 5, 6),
     }
+    gate_anchors: dict[str, int] = {}
     for gate, anchors in expected.items():
         match = re.search(
             rf"^  {gate}:\n    anchor:\s*(\d+)\n    score:\s*(\d+)\s*$",
@@ -162,11 +169,32 @@ def validate_gates(yaml: str, scores: dict[int, int], errors: list[str]) -> None
         if anchor not in anchors:
             errors.append(f"invalid gate anchor: {gate}")
             continue
+        gate_anchors[gate] = anchor
         if scores.get(anchor) != score:
             errors.append(f"gate {gate} score does not match anchor area {anchor}")
 
-    if not re.search(r"^  probe:\n    result:\s*(pass|fail|not attempted)\s*$", yaml, re.MULTILINE):
+    probe = re.search(r"^  probe:\n    result:\s*(pass|fail|not attempted)\s*$", yaml, re.MULTILINE)
+    if not probe:
         errors.append("missing gate entry: probe")
+    return gate_anchors, probe.group(1) if probe else None
+
+
+def validate_overall_status(yaml: str, normalized_score: int | None, scores: dict[int, int], statuses: dict[int, str], maximums: dict[int, int], gate_anchors: dict[str, int], probe: str | None, errors: list[str]) -> None:
+    status = re.search(r"^status:\s*(.+?)\s*$", yaml, re.MULTILINE)
+    confidence = re.search(r"^confidence:\s*(.+?)\s*$", yaml, re.MULTILINE)
+    if not status:
+        return
+    if status.group(1) == "Ready":
+        gates_pass = all(
+            statuses.get(anchor) == "Verified" and scores.get(anchor) == maximums.get(anchor)
+            for anchor in gate_anchors.values()
+        ) and len(gate_anchors) == 3
+        if normalized_score is None or normalized_score < 80 or confidence is None or confidence.group(1) not in ("High", "Medium") or probe != "pass" or not gates_pass:
+            errors.append("Ready status is not supported by parsed report fields")
+    elif status.group(1) == "Partially ready":
+        gate_blocked = any(statuses.get(anchor) == "Repository-blocked" for anchor in gate_anchors.values())
+        if normalized_score is not None and (normalized_score < 50 or gate_blocked or probe == "fail"):
+            errors.append("Partially ready status is not supported by parsed report fields")
 
 
 def validate_fix_records(content: str, errors: list[str]) -> None:
@@ -174,9 +202,31 @@ def validate_fix_records(content: str, errors: list[str]) -> None:
     if fixes is None:
         return
 
-    index = fixes.split("\n### ", 1)[0]
+    normalized_fixes = fixes.strip()
+    if not normalized_fixes.startswith(INDEX_HEADER):
+        errors.append("missing What to Fix compact index")
+        index_rows: list[str] = []
+    else:
+        after_header = normalized_fixes[len(INDEX_HEADER):]
+        if not after_header.startswith(f"\n{INDEX_SEPARATOR}"):
+            errors.append("malformed What to Fix compact index separator")
+            index_rows = []
+        else:
+            index_rows = []
+            for line in after_header[len(INDEX_SEPARATOR) + 2:].splitlines():
+                if not line:
+                    break
+                if not line.startswith("|"):
+                    break
+                index_rows.append(line)
+
     index_ids: list[str] = []
-    for value in re.findall(r"^\|\s*(F-[^| ]*)\s*\|", index, re.MULTILINE):
+    for row in index_rows:
+        cells = row.split("|")
+        if len(cells) != 7 or not row.endswith("|"):
+            errors.append("malformed What to Fix compact index row")
+            continue
+        value = cells[1].strip()
         if not re.fullmatch(r"F-\d\d", value):
             errors.append(f"malformed Fix Record index ID: {value}")
         else:
@@ -227,12 +277,15 @@ def validate(path: Path) -> list[str]:
 
     glossary = section(content, "Glossary")
     normalized_glossary = glossary.strip() if glossary is not None else ""
+    anchor_sentence = r"Gate 3 anchor: Area [456] — [^\n]+\."
     if glossary is None or not re.search(r"^\| Term \| Meaning \|$", normalized_glossary, re.MULTILINE):
         errors.append("missing glossary table header")
     elif not normalized_glossary.startswith(GLOSSARY_TABLE):
         errors.append("glossary does not match the fixed table")
-    elif not re.search(r"^Gate 3 anchor: Area [456] — .+\.$", normalized_glossary[len(GLOSSARY_TABLE):].strip(), re.MULTILINE):
+    elif not normalized_glossary[len(GLOSSARY_TABLE):].strip():
         errors.append("missing Gate 3 anchor sentence")
+    elif not re.fullmatch(rf"{re.escape(GLOSSARY_TABLE)}\n\n{anchor_sentence}", normalized_glossary):
+        errors.append("glossary does not match the fixed contract")
 
     yaml = yaml_block(content)
     if yaml is None:
@@ -246,7 +299,7 @@ def validate(path: Path) -> list[str]:
             errors.append("Run and Scope keys are not in the required order")
         allowed_value(yaml, "status", ("Ready", "Partially ready", "Not ready"), errors)
         allowed_value(yaml, "confidence", ("High", "Medium", "Low"), errors)
-        scores, scorecard_total, scorecard_maximum = validate_scorecard(content, errors)
+        scores, area_statuses, area_maximums, scorecard_total, scorecard_maximum = validate_scorecard(content, errors)
         raw_total = integer(yaml, "raw_total", errors)
         applicable_maximum = integer(yaml, "applicable_maximum", errors)
         normalized_score = integer(yaml, "normalized_score", errors)
@@ -257,7 +310,8 @@ def validate(path: Path) -> list[str]:
         if raw_total is not None and applicable_maximum not in (None, 0) and normalized_score is not None:
             if normalized_score != round(raw_total / applicable_maximum * 100):
                 errors.append("normalized_score does not match raw_total and applicable_maximum")
-        validate_gates(yaml, scores, errors)
+        gate_anchors, probe = validate_gates(yaml, scores, errors)
+        validate_overall_status(yaml, normalized_score, scores, area_statuses, area_maximums, gate_anchors, probe, errors)
 
     validate_fix_records(content, errors)
     return errors

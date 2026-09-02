@@ -62,7 +62,7 @@ GLOSSARY = """| Term | Meaning |
 Gate 3 anchor: Area 5 — unit tests are the primary verification surface for this repository."""
 
 
-def run_scope(*, raw_total: int = 105, normalized_score: int = 100, setup_score: int = 10) -> str:
+def run_scope(*, raw_total: int = 105, normalized_score: int = 100, setup_score: int = 10, status: str = "Ready", confidence: str = "High", probe: str = "pass") -> str:
     return f"""```yaml
 audited_by: agent
 prompt_version: 4.4.0
@@ -79,8 +79,8 @@ clean_state_setup: verified
 normalized_score: {normalized_score}
 raw_total: {raw_total}
 applicable_maximum: 105
-status: Ready
-confidence: High
+status: {status}
+confidence: {confidence}
 gates:
   setup:
     anchor: 2
@@ -92,7 +92,7 @@ gates:
     anchor: 5
     score: 10
   probe:
-    result: pass
+    result: {probe}
 ```"""
 
 
@@ -160,6 +160,10 @@ class ValidateReportTests(unittest.TestCase):
         errors = self.validate(report(glossary=GLOSSARY.rsplit("\n\n", 1)[0]))
         self.assertIn("missing Gate 3 anchor sentence", errors)
 
+    def test_rejects_glossary_content_after_the_gate_three_anchor_sentence(self) -> None:
+        errors = self.validate(report(glossary=f"{GLOSSARY}\n\nExtra prose."))
+        self.assertIn("glossary does not match the fixed contract", errors)
+
     def test_rejects_a_yaml_block_outside_run_and_scope(self) -> None:
         malformed = report(run_scope_body="Content").replace("## Confidence and Limits\n\nContent", f"## Confidence and Limits\n\n{run_scope()}")
         self.assertIn("missing Run and Scope YAML block", self.validate(malformed))
@@ -189,6 +193,21 @@ class ValidateReportTests(unittest.TestCase):
     def test_rejects_an_invalid_overall_status(self) -> None:
         errors = self.validate(report(run_scope_body=run_scope().replace("status: Ready", "status: Unknown")))
         self.assertIn("invalid Run and Scope status: Unknown", errors)
+
+    def test_rejects_ready_when_confidence_is_low(self) -> None:
+        errors = self.validate(report(run_scope_body=run_scope(confidence="Low")))
+        self.assertIn("Ready status is not supported by parsed report fields", errors)
+
+    def test_rejects_partially_ready_when_the_probe_failed(self) -> None:
+        errors = self.validate(report(run_scope_body=run_scope(status="Partially ready", probe="fail")))
+        self.assertIn("Partially ready status is not supported by parsed report fields", errors)
+
+    def test_rejects_a_missing_compact_index_with_no_records(self) -> None:
+        self.assertIn("missing What to Fix compact index", self.validate(report(fixes="No findings.")))
+
+    def test_rejects_a_malformed_compact_index_separator(self) -> None:
+        malformed = fix_records().replace("| --- | --- | --- | --- | --- |", "| --- | --- |")
+        self.assertIn("malformed What to Fix compact index separator", self.validate(report(fixes=malformed)))
 
     def test_rejects_an_incomplete_fix_record(self) -> None:
         self.assertIn("F-01 is missing Fix Record field: Level", self.validate(report(fixes=fix_records(complete=False))))
