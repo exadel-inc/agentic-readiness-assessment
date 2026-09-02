@@ -84,6 +84,10 @@ Do not invent an external file path or configuration key. If the exact target ca
 
 ## Audit Method
 
+### Delegation
+
+Read `references/assessment-decision-record.md` before baseline collection. Use Claude only to interpret repository evidence; use deterministic commands for score arithmetic and `scripts/validate_report.py` for report validation. The requesting human owns scope constraints and must approve an irreversible operation before it runs; otherwise stop and record the command as refused. Keep the delegation map's Cost / Complexity / Risk discipline in the evidence and report the named detection mechanism for any limitation.
+
 ### 1. Baseline and Scope
 
 Capture the baseline before anything else: tracked and untracked worktree state, stash list, commit, and branch. A dirty tree or pre-existing untracked directory is the baseline, not an error. Record the platform, explicit constraints, and relevant installed tools.
@@ -389,7 +393,8 @@ Re-read the report and verify:
 - the probe section reports either a completed probe or an explicit reason it was not attempted;
 - the report contains only commands actually executed or explicitly refused as unsafe;
 - the final worktree differs from the baseline only by the report and known audit-created ignored artifacts, with the probe edit reverted.
-- `python3 skills/agentic-readiness-assessment/scripts/validate_report.py reports/agentic-readiness.md` exits 0.
+- `python3 skills/agentic-readiness-assessment/scripts/validate_report.py reports/agentic-readiness.md` exits 0, with its command and result recorded in Commands Executed;
+- any unavailable host-execution control is recorded in Run and Scope constraints and Confidence and Limits as an `agent-environment` limitation.
 
 If the validator fails, make one corrective rewrite of the report and run it once more. Record any unresolved validator errors in Confidence and Limits; say that you rewrote it, then stop.
 
