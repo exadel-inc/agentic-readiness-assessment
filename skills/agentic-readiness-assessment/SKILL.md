@@ -299,7 +299,7 @@ One short paragraph: the score, overall status, confidence, a one-sentence readi
 
 ### 2. Run and Scope
 
-A single fenced yaml block with these keys in this order: `audited_by`, `prompt_version`, `started`, `completed`, `commit`, `branch`, `platform`, `archetype`, `scope`, `baseline_worktree`, `final_worktree`, `clean_state_setup` (verified, unfrozen fallback, warmed-workspace-only, or blocked with reason), `normalized_score`, `raw_total`, `applicable_maximum`, `status`, `confidence`, and a `gates` map with `setup`, `deliverable`, `verification`, and `probe`.
+A single fenced yaml block with these keys in this order: `audited_by`, `prompt_version`, `started`, `completed`, `commit`, `branch`, `platform`, `archetype`, `scope`, `baseline_worktree`, `final_worktree`, `clean_state_setup` (verified, unfrozen fallback, warmed-workspace-only, or blocked with reason), `normalized_score`, `raw_total`, `applicable_maximum`, `status`, `confidence`, and a `gates` map. `raw_total` and `applicable_maximum` are integers; `normalized_score` is `round(raw_total / applicable_maximum * 100)`. Use this exact gate shape: `setup` has `anchor: 2` and its integer `score`; `deliverable` has `anchor: 3` and its integer `score`; `verification` has `anchor: 4`, `5`, or `6` and its integer `score`; `probe` has `result: pass`, `fail`, or `not attempted`. Each gate score equals its anchor area's earned score.
 
 Then list components, workspaces, and explicit constraints, including the five host-execution fields from `references/agent-execution-contract.md` or `unavailable` with their `agent-environment` limitation.
 
@@ -331,7 +331,7 @@ Use:
 
 `Area | Applicability | Status | Score | Verification | Evidence / Result | Fix IDs`
 
-Include all fourteen areas, then the area 13 capability breakdown and any negative controls found. Close with the raw total, applicable maximum, every N/A subtraction, the addends on one line, and the normalized score. Gate results belong in the next section; confidence belongs in sections 1 and 13.
+Include all fourteen areas, then the area 13 capability breakdown and any negative controls found. Every area row uses exactly one allowed status — `Verified`, `Partial`, `Repository-blocked`, or `N/A` — and a Score of `earned/max`; `N/A` uses `N/A`. The earned score is the area's maximum for `Verified`, half rounded down for `Partial`, and zero for `Repository-blocked`. Close with the raw total, applicable maximum, every N/A subtraction, the addends on one line, and the normalized score. Gate results belong in the next section; confidence belongs in sections 1 and 13.
 
 The `Fix IDs` column lists IDs only. Do not restate problems here.
 
@@ -345,7 +345,7 @@ Open with a compact index table, repository-owned fixes first, then environment 
 
 `ID | Priority / Owner | Problem and blocked capability | Fix and target | Verify`
 
-Every cell must be actionable on its own. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
+Every cell must be actionable on its own. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. Start each record with `### F-nn`, then put each field on its own line as `**Problem:**`, `**Blocks:**`, `**Evidence:**`, `**Priority:**`, `**Owner:**`, `**Target:**`, `**Fix:**`, `**Verify:**`, and `**Level:**`. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
 
 ### 7. What Can Be Delegated Today
 
