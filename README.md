@@ -45,15 +45,38 @@ The plugin ships a single Agent Skill, [`agentic-readiness-assessment`](skills/a
 
 ## Supported clients
 
-This is a skill written in the open [Agent Skills](https://agentskills.io/specification) format and ships with a portable [Agent Plugins](https://agent-plugins.org/specification) manifest, so any agent that reads those formats can pick it up.
+This is a skill written in the open [Agent Skills](https://agentskills.io/specification) format. It includes native manifests for Cursor-compatible Agent Plugins, Codex, and Claude Code:
 
-We are working towards listing it in every major marketplace, Cursor and Claude Code first, with the others and the community marketplaces to follow.
+- [`plugin.json`](plugin.json) for the portable [Agent Plugins](https://agent-plugins.org/specification) format used by Cursor;
+- [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) for ChatGPT and Codex;
+- [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) for Claude Code.
+
+The three packages point to the same skill and require no backend or MCP server.
 
 ## Installation
 
-Once the plugin is published, install it from the [Cursor marketplace](https://cursor.com/marketplace).
+### Cursor
 
-To try it before publication, clone the repository and point Cursor at your local copy:
+Once published, install it from the [Cursor marketplace](https://cursor.com/marketplace).
+
+### Claude Code
+
+Add this repository as a marketplace and install the plugin:
+
+```sh
+claude plugin marketplace add exadel-inc/agentic-readiness-assessment
+claude plugin install agentic-readiness-assessment@exadel-agent-plugins
+```
+
+Until the marketplace file reaches the default branch, clone the repository and load it directly with `claude --plugin-dir .`.
+
+### ChatGPT and Codex
+
+Public installation will be available after OpenAI review and publication. The native Codex package is already present in the repository for submission and local packaging.
+
+### From source
+
+Clone the repository and point a compatible client at the repository root:
 
 ```sh
 git clone https://github.com/exadel-inc/agentic-readiness-assessment.git
@@ -122,17 +145,17 @@ More runs, and what was redacted before publishing, in [`examples/`](examples/RE
 
 ## Versioning
 
-The `version` field in [`plugin.json`](plugin.json) is the single source of truth. The skill does not carry its own version: it reads the manifest and records that value as `prompt_version` in the run block of every generated report, so any report can be traced back to the revision that produced it.
+The `version` field in [`plugin.json`](plugin.json) is the canonical source of truth. Platform marketplaces require self-contained manifests, so the same value is mirrored in [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json) and [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). The skill reads the portable root manifest and records that value as `prompt_version` in every generated report.
 
-The version is currently `4.1.0`. `MAJOR.MINOR` continues the assessment prompt's own revision history, which predates this repository, so reports produced here stay on one timeline with reports produced by earlier revisions of the prompt. `PATCH` covers packaging changes that leave the prompt untouched.
+The version is currently `4.1.1`. `MAJOR.MINOR` continues the assessment prompt's own revision history, which predates this repository, so reports produced here stay on one timeline with reports produced by earlier revisions of the prompt. `PATCH` covers packaging changes that leave the prompt untouched.
 
 Bump it as follows:
 
 | Change | Bump | Example |
 | --- | --- | --- |
-| The report contract breaks: scoring areas or weights, gates, readiness thresholds, or report sections change such that scores are no longer comparable | major | `4.1.0` → `5.0.0` |
-| The prompt changes while the report contract holds | minor | `4.1.0` → `4.2.0` |
-| Packaging, README, or manifest changes only, with no change to prompt semantics | patch | `4.1.0` → `4.1.1` |
+| The report contract breaks: scoring areas or weights, gates, readiness thresholds, or report sections change such that scores are no longer comparable | major | `4.1.1` → `5.0.0` |
+| The prompt changes while the report contract holds | minor | `4.1.1` → `4.2.0` |
+| Packaging, README, or manifest changes only, with no change to prompt semantics | patch | `4.1.1` → `4.1.2` |
 
 Scores are directly comparable across reports sharing the same `MAJOR.MINOR`. A minor bump may shift scores, so compare across one with care; a major bump breaks the contract, so do not compare across it at all.
 
@@ -146,6 +169,7 @@ git log --follow skills/agentic-readiness-assessment/SKILL.md
 
 - [Skill definition](skills/agentic-readiness-assessment/SKILL.md)
 - [Example reports](examples/README.md)
+- [Publishing guide](docs/PUBLISHING.md)
 - [Changelog](CHANGELOG.md)
 
 ## Contributing

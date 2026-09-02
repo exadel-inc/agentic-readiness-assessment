@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial plugin scaffold with the `agentic-readiness-assessment` skill.
 - Assessment prompt imported from its source repository.
 - Example report under `examples/`, from a run against a Next.js application, linked from the README.
+- Native Codex and Claude Code plugin manifests.
+- A self-hosted Claude Code marketplace catalog and publication guide.
 
 ### Removed
 
@@ -19,6 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The version in `plugin.json` is now the single source of truth for the skill, set to `4.1.0` so that `MAJOR.MINOR` continues the assessment prompt's prior revision history. The skill reads it and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
+- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.1.1`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
 
 [Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/main

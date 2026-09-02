@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "exadel-agent-plugins",
+  "description": "AI agent development tools from Exadel.",
+  "owner": {
+    "name": "Exadel",
+    "url": "https://exadel.com"
+  },
+  "plugins": [
+    {
+      "name": "agentic-readiness-assessment",
+      "source": "./",
+      "description": "Evaluates a repository's readiness for AI coding agents and produces an evidence-based scorecard.",
+      "category": "development",
+      "tags": [
+        "agentic-readiness",
+        "codebase-analysis",
+        "assessment"
+      ]
+    }
+  ]
+}
