@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.1.1`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
+- Added dependency-free deterministic validation for the generated report contract.
+- Require host execution evidence for model identity, permissions, command boundaries, stop conditions, and context telemetry.
+- Added the assessment delegation and decision record for deterministic calculations, report validation, and human approval boundaries.
+- Made assessment instructions model-neutral, portable from an installed skill directory, and explicit about two-phase report finalization.
+- Strengthened report validation for status conditions, negative controls, Gate 3 anchor agreement, and escaped Markdown table pipes.
+- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.5.0`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
 
 [Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/main
