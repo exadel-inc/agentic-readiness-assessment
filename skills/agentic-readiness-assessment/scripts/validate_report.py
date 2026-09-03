@@ -106,7 +106,7 @@ def allowed_value(yaml: str, key: str, values: tuple[str, ...], errors: list[str
         errors.append(f"invalid Run and Scope {key}: {match.group(1)}")
 
 
-def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int], dict[int, str], dict[int, int], int, int]:
+def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int], dict[int, str], dict[int, int], int, int, bool]:
     scorecard = section(content, "Readiness Scorecard")
     scores: dict[int, int] = {}
     statuses: dict[int, str] = {}
@@ -114,7 +114,7 @@ def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int],
     total = 0
     applicable_maximum = 0
     if scorecard is None:
-        return scores, statuses, maximums, total, applicable_maximum
+        return scores, statuses, maximums, total, applicable_maximum, False
 
     for number, (name, maximum) in enumerate(AREAS, start=1):
         match = re.search(
@@ -146,7 +146,18 @@ def validate_scorecard(content: str, errors: list[str]) -> tuple[dict[int, int],
             continue
         scores[number] = expected
         total += expected
-    return scores, statuses, maximums, total, applicable_maximum
+    negative_controls = re.search(r"^Negative controls:\s*(.+?)\s*$", scorecard, re.MULTILINE)
+    if negative_controls is None:
+        errors.append("missing negative controls declaration")
+        has_negative_control = False
+    elif negative_controls.group(1) == "none":
+        has_negative_control = False
+    elif re.fullmatch(r"F-\d\d(?:, F-\d\d)*", negative_controls.group(1)):
+        has_negative_control = True
+    else:
+        errors.append("invalid negative controls declaration")
+        has_negative_control = False
+    return scores, statuses, maximums, total, applicable_maximum, has_negative_control
 
 
 def validate_gates(yaml: str, scores: dict[int, int], errors: list[str]) -> tuple[dict[str, int], str | None]:
@@ -179,28 +190,35 @@ def validate_gates(yaml: str, scores: dict[int, int], errors: list[str]) -> tupl
     return gate_anchors, probe.group(1) if probe else None
 
 
-def validate_overall_status(yaml: str, normalized_score: int | None, scores: dict[int, int], statuses: dict[int, str], maximums: dict[int, int], gate_anchors: dict[str, int], probe: str | None, errors: list[str]) -> None:
+def validate_overall_status(yaml: str, normalized_score: int | None, scores: dict[int, int], statuses: dict[int, str], maximums: dict[int, int], gate_anchors: dict[str, int], probe: str | None, has_p0: bool, has_negative_control: bool, errors: list[str]) -> None:
     status = re.search(r"^status:\s*(.+?)\s*$", yaml, re.MULTILINE)
     confidence = re.search(r"^confidence:\s*(.+?)\s*$", yaml, re.MULTILINE)
     if not status:
         return
-    if status.group(1) == "Ready":
-        gates_pass = all(
-            statuses.get(anchor) == "Verified" and scores.get(anchor) == maximums.get(anchor)
-            for anchor in gate_anchors.values()
-        ) and len(gate_anchors) == 3
-        if normalized_score is None or normalized_score < 80 or confidence is None or confidence.group(1) not in ("High", "Medium") or probe != "pass" or not gates_pass:
-            errors.append("Ready status is not supported by parsed report fields")
-    elif status.group(1) == "Partially ready":
-        gate_blocked = any(statuses.get(anchor) == "Repository-blocked" for anchor in gate_anchors.values())
-        if normalized_score is not None and (normalized_score < 50 or gate_blocked or probe == "fail"):
-            errors.append("Partially ready status is not supported by parsed report fields")
+    gates_pass = all(
+        statuses.get(anchor) == "Verified" and scores.get(anchor) == maximums.get(anchor)
+        for anchor in gate_anchors.values()
+    ) and len(gate_anchors) == 3
+    gate_blocked = any(statuses.get(anchor) == "Repository-blocked" for anchor in gate_anchors.values())
+    ready = normalized_score is not None and normalized_score >= 80 and confidence is not None and confidence.group(1) in ("High", "Medium") and probe == "pass" and gates_pass and not has_p0 and not has_negative_control
+    not_ready = normalized_score is not None and (normalized_score < 50 or gate_blocked or probe == "fail" or has_p0)
+
+    if status.group(1) == "Ready" and not ready:
+        errors.append("Ready status is not supported by parsed report fields")
+    elif status.group(1) == "Partially ready" and (ready or not_ready):
+        errors.append("Partially ready status is not supported by parsed report fields")
+    elif status.group(1) == "Not ready" and not not_ready:
+        errors.append("Not ready status is not supported by parsed report fields")
 
 
-def validate_fix_records(content: str, errors: list[str]) -> None:
+def split_table_row(row: str) -> list[str]:
+    return re.split(r"(?<!\\)\|", row)
+
+
+def validate_fix_records(content: str, errors: list[str]) -> bool:
     fixes = section(content, "What to Fix")
     if fixes is None:
-        return
+        return False
 
     normalized_fixes = fixes.strip()
     if not normalized_fixes.startswith(INDEX_HEADER):
@@ -222,7 +240,7 @@ def validate_fix_records(content: str, errors: list[str]) -> None:
 
     index_ids: list[str] = []
     for row in index_rows:
-        cells = row.split("|")
+        cells = split_table_row(row)
         if len(cells) != 7 or not row.endswith("|"):
             errors.append("malformed What to Fix compact index row")
             continue
@@ -257,6 +275,7 @@ def validate_fix_records(content: str, errors: list[str]) -> None:
         for field in FIX_RECORD_FIELDS:
             if not re.search(rf"^\*\*{re.escape(field)}:\*\*\s+\S", record, re.MULTILINE):
                 errors.append(f"{identifier} is missing Fix Record field: {field}")
+    return any(re.search(r"^\| F-\d\d \| P0 /", row) for row in index_rows)
 
 
 def validate(path: Path) -> list[str]:
@@ -277,15 +296,20 @@ def validate(path: Path) -> list[str]:
 
     glossary = section(content, "Glossary")
     normalized_glossary = glossary.strip() if glossary is not None else ""
-    anchor_sentence = r"Gate 3 anchor: Area [456] — [^\n]+\."
+    anchor_sentence = r"Gate 3 anchor: Area ([456]) — [^\n]+\."
+    glossary_anchor: int | None = None
     if glossary is None or not re.search(r"^\| Term \| Meaning \|$", normalized_glossary, re.MULTILINE):
         errors.append("missing glossary table header")
     elif not normalized_glossary.startswith(GLOSSARY_TABLE):
         errors.append("glossary does not match the fixed table")
     elif not normalized_glossary[len(GLOSSARY_TABLE):].strip():
         errors.append("missing Gate 3 anchor sentence")
-    elif not re.fullmatch(rf"{re.escape(GLOSSARY_TABLE)}\n\n{anchor_sentence}", normalized_glossary):
-        errors.append("glossary does not match the fixed contract")
+    else:
+        anchor = re.fullmatch(rf"{re.escape(GLOSSARY_TABLE)}\n\n{anchor_sentence}", normalized_glossary)
+        if not anchor:
+            errors.append("glossary does not match the fixed contract")
+        else:
+            glossary_anchor = int(anchor.group(1))
 
     yaml = yaml_block(content)
     if yaml is None:
@@ -299,7 +323,7 @@ def validate(path: Path) -> list[str]:
             errors.append("Run and Scope keys are not in the required order")
         allowed_value(yaml, "status", ("Ready", "Partially ready", "Not ready"), errors)
         allowed_value(yaml, "confidence", ("High", "Medium", "Low"), errors)
-        scores, area_statuses, area_maximums, scorecard_total, scorecard_maximum = validate_scorecard(content, errors)
+        scores, area_statuses, area_maximums, scorecard_total, scorecard_maximum, has_negative_control = validate_scorecard(content, errors)
         raw_total = integer(yaml, "raw_total", errors)
         applicable_maximum = integer(yaml, "applicable_maximum", errors)
         normalized_score = integer(yaml, "normalized_score", errors)
@@ -311,7 +335,11 @@ def validate(path: Path) -> list[str]:
             if normalized_score != round(raw_total / applicable_maximum * 100):
                 errors.append("normalized_score does not match raw_total and applicable_maximum")
         gate_anchors, probe = validate_gates(yaml, scores, errors)
-        validate_overall_status(yaml, normalized_score, scores, area_statuses, area_maximums, gate_anchors, probe, errors)
+        if glossary_anchor is not None and gate_anchors.get("verification") != glossary_anchor:
+            errors.append("Glossary Gate 3 anchor does not match gates.verification.anchor")
+        has_p0 = validate_fix_records(content, errors)
+        validate_overall_status(yaml, normalized_score, scores, area_statuses, area_maximums, gate_anchors, probe, has_p0, has_negative_control, errors)
+        return errors
 
     validate_fix_records(content, errors)
     return errors

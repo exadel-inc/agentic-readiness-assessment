@@ -103,6 +103,7 @@ def scorecard(*, setup_status: str = "Verified") -> str:
         status = setup_status if name == "Reproducible environment and dependency setup" else "Verified"
         score = maximum if status == "Verified" else maximum // 2
         rows.append(f"| {name} | applicable | {status} | {score}/{maximum} | Executed | evidence | |")
+    rows.extend(("", "Negative controls: none"))
     return "\n".join(rows)
 
 
@@ -189,6 +190,28 @@ class ValidateReportTests(unittest.TestCase):
     def test_rejects_a_gate_score_that_does_not_match_its_anchor(self) -> None:
         errors = self.validate(report(run_scope_body=run_scope(setup_score=5)))
         self.assertIn("gate setup score does not match anchor area 2", errors)
+
+    def test_rejects_a_glossary_gate_three_anchor_that_differs_from_the_gate_map(self) -> None:
+        errors = self.validate(report(glossary=GLOSSARY.replace("Area 5 —", "Area 4 —")))
+        self.assertIn("Glossary Gate 3 anchor does not match gates.verification.anchor", errors)
+
+    def test_accepts_an_escaped_pipe_in_a_compact_index_row(self) -> None:
+        fixes = fix_records().replace("| F-01 | P2 / repo | problem | fix | command |", "| F-01 | P2 / repo | command \\| pipeline | fix | command |")
+        self.assertEqual(self.validate(report(fixes=fixes)), [])
+
+    def test_rejects_ready_with_a_p0_fix_record(self) -> None:
+        fixes = fix_records().replace("P2 / repo", "P0 / repo")
+        errors = self.validate(report(fixes=fixes))
+        self.assertIn("Ready status is not supported by parsed report fields", errors)
+
+    def test_rejects_ready_with_a_negative_control(self) -> None:
+        scorecard_with_negative_control = scorecard().replace("Negative controls: none", "Negative controls: F-01")
+        errors = self.validate(report(scorecard_body=scorecard_with_negative_control))
+        self.assertIn("Ready status is not supported by parsed report fields", errors)
+
+    def test_rejects_not_ready_without_a_mechanical_blocker(self) -> None:
+        errors = self.validate(report(run_scope_body=run_scope(status="Not ready")))
+        self.assertIn("Not ready status is not supported by parsed report fields", errors)
 
     def test_rejects_an_invalid_overall_status(self) -> None:
         errors = self.validate(report(run_scope_body=run_scope().replace("status: Ready", "status: Unknown")))
