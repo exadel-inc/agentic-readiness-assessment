@@ -15,13 +15,17 @@ Read the `version` field of the plugin's `plugin.json` and record it as `prompt_
 
 ## Objective
 
-Assess whether an AI coding agent can independently understand this repository, find the correct change points, establish a reproducible environment, validate work, and prepare a change for delivery. Produce an evidence-backed improvement backlog for the FDE team.
+Assess whether an AI coding agent can independently understand this repository, find the correct change points, establish a reproducible environment, validate work, and prepare a change for delivery. Produce an evidence-backed improvement backlog for maintainers.
 
-This is an audit. Do not implement features or refactor production code. Create only one file: `reports/agentic-readiness.md`, a single document holding both the FDE decision content and the supporting evidence.
+This is an audit. Do not implement features or refactor production code. Create only one file: `reports/agentic-readiness.md`, a single document holding both the decision content and the supporting evidence.
 
-Create `reports/` if needed. The only permitted change to any other tracked file is the single reversible probe edit described in *Probe*, which you revert before writing the report. Preserve all pre-existing user changes.
+The only permitted change to any other tracked file is the single reversible probe edit described in *Probe*, which you revert before writing the report. Preserve all pre-existing user changes.
 
 The deliverable of this task is that report. Any standing instruction to output only code, or to treat an analysis document as a failed task, applies to feature work and not to this audit.
+
+## Host Execution Contract
+
+Read `references/agent-execution-contract.md` before collecting the baseline. Under the explicit constraints in Run and Scope, record the host's model identity, effective permission profile, command boundary, run stop condition, and context telemetry availability. Write `unavailable` for any field the host cannot evidence, classify it as an `agent-environment` limitation, and never invent a tool restriction, model pin, or telemetry control. After roughly five attempts to obtain unavailable evidence, stop and record the limitation.
 
 ## Evidence and Safety Rules
 
@@ -47,6 +51,8 @@ Classify commands before execution:
 - **external-write:** Pushes, publishes, deploys, or mutates remote state. Do not run.
 - **privileged:** Requires root, `sudo`, or machine-wide changes. Do not run.
 - **paid:** Calls a billed external service. Do not run.
+
+Run `python3 <skill-directory>/scripts/validate_report.py reports/agentic-readiness.md` from the audited repository after the provisional report write; `<skill-directory>` is the directory containing this `SKILL.md`, not a path inside the audited repository. This is a `local-read` command that validates the report contract without changing the repository.
 
 Being documented does not make a command safe. A refused command is not a skipped category: record it, name its class, and score on the safe evidence that remains.
 
@@ -77,6 +83,10 @@ A missing build tool is never a documentation fix. If `make`, a container runtim
 Do not invent an external file path or configuration key. If the exact target cannot be established, name the required artifact generically and mark the target unverified.
 
 ## Audit Method
+
+### Delegation
+
+Read `references/assessment-decision-record.md` before baseline collection. Use the audit agent only to interpret repository evidence; use deterministic commands for score arithmetic and `scripts/validate_report.py` for report validation. The requesting human owns scope constraints and must approve an irreversible operation before it runs; otherwise stop and record the command as refused. Keep the delegation map's Cost / Complexity / Risk discipline in the evidence and report the named detection mechanism for any limitation.
 
 ### 1. Baseline and Scope
 
@@ -269,7 +279,7 @@ Order records by priority, then by expected effort when reasonably known, so the
 
 ## Output Quality Rules
 
-- Give every line a consumer and a decision or action it enables. There are two consumers: the FDE deciding what to repair and delegate, and the agent consuming structured state to plan or re-run.
+- Give every line a consumer and a decision or action it enables. There are two consumers: the maintainer deciding what to repair and delegate, and the agent consuming structured state to plan or re-run.
 - State each problem authoritatively in its Fix Record. Elsewhere cite its ID — but a table an FDE acts on must still carry complete wording. **Never write a bare `See F-01` in a cell whose purpose is to tell someone what to do.**
 - Every scorecard cell cites a command row or a `path:line`.
 - Do not add consistently empty columns or write `not measured` repeatedly. Include duration only when measured.
@@ -277,7 +287,7 @@ Order records by priority, then by expected effort when reasonably known, so the
 - Do not create a finding without a fix, or a fix without a finding.
 - State each fact where the report assigns it and do not restate it elsewhere. The score, status, and confidence belong in the run block; the verdict paragraph interprets them in prose without repeating the commit or prompt version.
 - No table exceeds seven columns; one line per cell; escape literal pipes as `\|`.
-- Write the report in a single write operation using the file-editing tool. Never assemble it with shell heredocs.
+- Write the provisional report in one file-editing operation. Never assemble it with shell heredocs. The finalization exception in Final Validation permits the bounded rewrites needed to validate and truthfully record that command.
 
 ## Report
 
@@ -289,13 +299,13 @@ One short paragraph: the score, overall status, confidence, a one-sentence readi
 
 ### 2. Run and Scope
 
-A single fenced yaml block with these keys in this order: `audited_by`, `prompt_version`, `started`, `completed`, `commit`, `branch`, `platform`, `archetype`, `scope`, `baseline_worktree`, `final_worktree`, `clean_state_setup` (verified, unfrozen fallback, warmed-workspace-only, or blocked with reason), `normalized_score`, `raw_total`, `applicable_maximum`, `status`, `confidence`, and a `gates` map with `setup`, `deliverable`, `verification`, and `probe`.
+A single fenced yaml block with exactly these top-level keys, in this order: `audited_by`, `prompt_version`, `started`, `completed`, `commit`, `branch`, `platform`, `archetype`, `scope`, `baseline_worktree`, `final_worktree`, `clean_state_setup` (verified, unfrozen fallback, warmed-workspace-only, or blocked with reason), `normalized_score`, `raw_total`, `applicable_maximum`, `status`, `confidence`, and a `gates` map. Follow `references/report-contract.md` for the machine-checked values and gate shape.
 
-Then list components, workspaces, and explicit constraints.
+Then list components, workspaces, and explicit constraints, including the five host-execution fields from `references/agent-execution-contract.md` or `unavailable` with their `agent-environment` limitation.
 
 ### 3. Glossary
 
-Reproduce the table below verbatim. It is fixed boilerplate: do not add terms, reword definitions, or expand it with repository-specific detail. Below the table, add one sentence naming which area anchors Gate 3 in this audit and why.
+Reproduce the table below verbatim. It is fixed boilerplate: do not add terms, reword definitions, or expand it with repository-specific detail. Immediately below the table, add exactly one sentence in this format: `Gate 3 anchor: Area <4, 5, or 6> — <why this is the primary verification surface>.` Add no other content to this section.
 
 | Term | Meaning |
 |---|---|
@@ -321,7 +331,7 @@ Use:
 
 `Area | Applicability | Status | Score | Verification | Evidence / Result | Fix IDs`
 
-Include all fourteen areas, then the area 13 capability breakdown and any negative controls found. Close with the raw total, applicable maximum, every N/A subtraction, the addends on one line, and the normalized score. Gate results belong in the next section; confidence belongs in sections 1 and 13.
+Include all fourteen areas, then the area 13 capability breakdown and any negative controls found. Follow `references/report-contract.md` for the machine-checked score and negative-control notation. Close with the raw total, applicable maximum, every N/A subtraction, the addends on one line, and the normalized score. Gate results belong in the next section; confidence belongs in sections 1 and 13.
 
 The `Fix IDs` column lists IDs only. Do not restate problems here.
 
@@ -335,11 +345,11 @@ Open with a compact index table, repository-owned fixes first, then environment 
 
 `ID | Priority / Owner | Problem and blocked capability | Fix and target | Verify`
 
-Every cell must be actionable on its own. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
+Every cell must be actionable on its own. Follow `references/report-contract.md` for the compact index. Each `F-nn` ID appears exactly once in the index and has exactly one matching record. Then give the authoritative full record for every `F-nn` ID, in ID order, with all nine fields. Start each record with `### F-nn`, then put each field on its own line as `**Problem:**`, `**Blocks:**`, `**Evidence:**`, `**Priority:**`, `**Owner:**`, `**Target:**`, `**Fix:**`, `**Verify:**`, and `**Level:**`. The index exists for triage and the records exist for execution; keep both, and keep their wording consistent.
 
 ### 7. What Can Be Delegated Today
 
-Rate research, implementation, testing, deliverable validation, runtime or API validation, browser validation, and autonomous task-to-PR delivery as Yes, Partially, No, or N/A, each with the gate or Fix Record IDs behind it. Rate autonomous delivery **Yes** only when every gate passes, the probe succeeded, and area 13 scored prevention points above zero.
+Rate the work an AI coding agent can independently undertake today — research, implementation, testing, deliverable validation, runtime or API validation, browser validation, and autonomous task-to-PR delivery — as Yes, Partially, No, or N/A, each with the gate or Fix Record IDs behind it. Rate autonomous delivery **Yes** only when every gate passes, the probe succeeded, and area 13 scored prevention points above zero.
 
 ### 8. What Is Already Good
 
@@ -383,7 +393,9 @@ Re-read the report and verify:
 - the probe section reports either a completed probe or an explicit reason it was not attempted;
 - the report contains only commands actually executed or explicitly refused as unsafe;
 - the final worktree differs from the baseline only by the report and known audit-created ignored artifacts, with the probe edit reverted.
+- `python3 <skill-directory>/scripts/validate_report.py reports/agentic-readiness.md` exits 0;
+- any unavailable host-execution control is recorded in Run and Scope constraints and Confidence and Limits as an `agent-environment` limitation.
 
-You may make one corrective rewrite if a check failed; say that you rewrote it, then stop.
+Finalization exception: write the provisional report, run the validator, and make one corrective rewrite only if it fails. Run the validator once more after that correction. Then make one finalization rewrite that changes only Commands Executed and Confidence and Limits to record the last validator command and result. The finalization rewrite is permitted even when the provisional report passed; no other rewrite is allowed. Record unresolved validator errors in Confidence and Limits; say that you rewrote it, then stop.
 
 Then respond with the report path, score, overall status, confidence, failed gates, the probe result, and the first repository-owned fix.
