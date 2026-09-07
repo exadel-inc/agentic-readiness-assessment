@@ -15,9 +15,9 @@ Read the `version` field of the plugin's `plugin.json` and record it as `prompt_
 
 ## Objective
 
-Assess whether an AI coding agent can independently understand this repository, find the correct change points, establish a reproducible environment, validate work, and prepare a change for delivery. Produce an evidence-backed improvement backlog for the FDE team.
+Assess whether an AI coding agent can independently understand this repository, find the correct change points, establish a reproducible environment, validate work, and prepare a change for delivery. Produce an evidence-backed improvement backlog for the team that owns the repository.
 
-This is an audit. Do not implement features or refactor production code. Create only one file: `reports/agentic-readiness.md`, a single document holding both the FDE decision content and the supporting evidence.
+This is an audit. Do not implement features or refactor production code. Create only one file: `reports/agentic-readiness.md`, a single document holding both the decision content and the supporting evidence.
 
 Create `reports/` if needed. The only permitted change to any other tracked file is the single reversible probe edit described in *Probe*, which you revert before writing the report. Preserve all pre-existing user changes.
 
@@ -269,8 +269,8 @@ Order records by priority, then by expected effort when reasonably known, so the
 
 ## Output Quality Rules
 
-- Give every line a consumer and a decision or action it enables. There are two consumers: the FDE deciding what to repair and delegate, and the agent consuming structured state to plan or re-run.
-- State each problem authoritatively in its Fix Record. Elsewhere cite its ID — but a table an FDE acts on must still carry complete wording. **Never write a bare `See F-01` in a cell whose purpose is to tell someone what to do.**
+- Give every line a consumer and a decision or action it enables. There are two consumers: the engineer deciding what to repair and delegate, and the agent consuming structured state to plan or re-run.
+- State each problem authoritatively in its Fix Record. Elsewhere cite its ID, but a table someone acts on must still carry complete wording. **Never write a bare `See F-01` in a cell whose purpose is to tell someone what to do.**
 - Every scorecard cell cites a command row or a `path:line`.
 - Do not add consistently empty columns or write `not measured` repeatedly. Include duration only when measured.
 - Do not narrate compliance with this prompt. Avoid decorative metadata and hedged filler.

@@ -8,4 +8,4 @@ Real reports produced by the skill, kept here so you can see the output before y
 
 Each report is the file the skill writes to `reports/agentic-readiness.md` in the audited repository, at the version recorded in its own run block.
 
-Five identifiers internal to the audited project were replaced before publishing: the CI host name, the group segment of its project path, a local database password, the name of the machine that ran the audit, and the tool-specific naming of its ticket prefix and agent-lessons directory. Scores, findings, fix records, commands and evidence are exactly as generated.
+Six identifiers internal to the audited project were replaced before publishing: the CI host name, the group segment of its project path, a local database password, the name of the machine that ran the audit, the name of the agent product that ran it, and the tool-specific naming of its ticket prefix and agent-lessons directory. Scores, findings, fix records, commands and evidence are exactly as generated.

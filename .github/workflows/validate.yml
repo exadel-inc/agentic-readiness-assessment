@@ -1,0 +1,56 @@
+name: Validate plugin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  manifests:
+    name: Manifests parse and agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every manifest is valid JSON
+        run: |
+          for f in plugin.json gemini-extension.json .codex-plugin/plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+            python3 -m json.tool "$f" > /dev/null
+            echo "ok $f"
+          done
+
+      - name: Versions match the canonical manifest
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          canonical = json.load(open('plugin.json'))['version']
+          mirrors = {
+              'gemini-extension.json': 'version',
+              '.codex-plugin/plugin.json': 'version',
+              '.claude-plugin/plugin.json': 'version',
+          }
+          bad = []
+          for path, key in mirrors.items():
+              v = json.load(open(path))[key]
+              if v != canonical:
+                  bad.append(f"{path} is {v}, plugin.json is {canonical}")
+          if bad:
+              sys.exit("Version mismatch:\n  " + "\n  ".join(bad))
+          print(f"all manifests at {canonical}")
+          PY
+
+      - name: The skill is where every client looks for it
+        run: test -f skills/agentic-readiness-assessment/SKILL.md
+
+  claude:
+    name: claude plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate
+        run: claude plugin validate . --strict

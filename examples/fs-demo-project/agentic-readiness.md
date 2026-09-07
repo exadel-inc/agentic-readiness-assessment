@@ -188,7 +188,7 @@ Gate 3 passes at full points via a currently required CI job proven against the 
 - **Evidence:** `docker compose up -d` → `Error: rootlessport listen tcp 0.0.0.0:5432: bind: address already in use`; `ss -ltnp | grep 5432` → `postgres` process (PID 425381, started Aug 29, unrelated to this repo) already `LISTEN`ing on `127.0.0.1:5432` and `[::1]:5432`.
 - **Priority:** P1
 - **Owner:** agent-environment
-- **Target:** the host/image that runs Colleague against this repository (unverified exact artifact — generic provisioning requirement)
+- **Target:** the host/image that runs the agent against this repository (unverified exact artifact — generic provisioning requirement)
 - **Fix:** Reserve port 5432 exclusively for the repo's Compose stack before invoking it (dedicated network namespace, or stop/relocate the host's own Postgres for the duration of the run).
 - **Verify:** `ss -ltn | grep 5432` is empty immediately before `docker compose up -d`; `docker compose ps` then reports `db` as `healthy`.
 - **Level:** control
