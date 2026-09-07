@@ -28,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The README line saying the marketplace catalog had not yet reached the default branch. It reached it in 4.1.1.
 
+## [4.5.0] - 2026-09-07
+
+### Added
+
+- Dependency-free deterministic validation of the generated report contract.
+- The assessment delegation and decision record, covering deterministic calculations, report validation and human approval boundaries.
+
+### Changed
+
+- Host execution evidence is now required for model identity, permissions, command boundaries, stop conditions and context telemetry.
+- Assessment instructions are model-neutral, portable from an installed skill directory, and explicit about two-phase report finalization.
+- Report validation strengthened for status conditions, negative controls, Gate 3 anchor agreement and escaped Markdown table pipes.
+- The version moved to `4.5.0`.
+
 ## [4.1.1] - 2026-09-02
 
 ### Added
@@ -44,12 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Added dependency-free deterministic validation for the generated report contract.
-- Require host execution evidence for model identity, permissions, command boundaries, stop conditions, and context telemetry.
-- Added the assessment delegation and decision record for deterministic calculations, report validation, and human approval boundaries.
-- Made assessment instructions model-neutral, portable from an installed skill directory, and explicit about two-phase report finalization.
-- Strengthened report validation for status conditions, negative controls, Gate 3 anchor agreement, and escaped Markdown table pipes.
-- The version in `plugin.json` remains the canonical source of truth for the skill and is mirrored into platform manifests. It is now `4.5.0`; the skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
+- The version in `plugin.json` is the canonical source of truth for the skill and is mirrored into the platform manifests. The skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
 
-[Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/d0e74a4...main
+[Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/549c87a...main
+[4.5.0]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/549c87a
 [4.1.1]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/d0e74a4

@@ -6,7 +6,7 @@ Contributions are welcome, whether that is a bug report, a proposed change to th
 
 This repository is one plugin root shared by Cursor, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application to build or deploy. The substance is:
 
-- `skills/agentic-readiness-assessment/SKILL.md`, the assessment prompt itself
+- `skills/agentic-readiness-assessment/SKILL.md`, the assessment prompt itself, with its `references/`, `scripts/` and `tests/`
 - `plugin.json` and the platform manifests under `.claude-plugin/`, `.codex-plugin/` and `gemini-extension.json`
 - `examples/`, real reports produced by the skill
 
