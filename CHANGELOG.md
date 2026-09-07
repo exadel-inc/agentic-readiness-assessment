@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `CONTRIBUTING.md` rewritten around what this repository holds. The previous version was scaffolding, referring to a test suite, a linter and an npm script that do not exist here, and ending in two unfilled headings.
 - The pull request template moved from the repository root to `.github/`, so the plugin payload carries only what a client needs.
-- Internal role wording removed from the skill, which described its reader as an FDE. The skill now names the engineer and the agent as its two consumers.
 - One product name that survived the first redaction pass generalized in the published example report, and the redaction note in `examples/README.md` corrected to match.
 - The Exadel services pitch appears once, at the end of the README, instead of twice.
 

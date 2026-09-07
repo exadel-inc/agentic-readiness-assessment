@@ -12,7 +12,7 @@ We aim to acknowledge a report within five working days and to agree a disclosur
 
 ## What this plugin does on your machine
 
-The plugin ships a single Agent Skill and no executable code of its own. When your agent runs it:
+The plugin ships a single Agent Skill, and everything it does happens on your machine. When your agent runs it:
 
 - It reads the repository in the current working directory.
 - It runs commands that already belong to that repository, such as its install, build, lint and test commands, and it records every command it ran.

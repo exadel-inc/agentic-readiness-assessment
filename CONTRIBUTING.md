@@ -4,7 +4,7 @@ Contributions are welcome, whether that is a bug report, a proposed change to th
 
 ## What lives here
 
-This repository is one plugin root shared by Cursor, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application code. The substance is:
+This repository is one plugin root shared by Cursor, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application to build or deploy. The substance is:
 
 - `skills/agentic-readiness-assessment/SKILL.md`, the assessment prompt itself
 - `plugin.json` and the platform manifests under `.claude-plugin/`, `.codex-plugin/` and `gemini-extension.json`
@@ -30,7 +30,7 @@ python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 claude plugin validate . --strict
 ```
 
-CI runs the same checks on every pull request. There is no build step, no test suite and no linter, because there is no code.
+CI runs the same checks on every pull request. There is no build step and no linter. If your change touches a script the skill ships, run that script's own tests as well.
 
 ## Changing the assessment prompt
 
