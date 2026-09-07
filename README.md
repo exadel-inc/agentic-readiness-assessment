@@ -53,6 +53,8 @@ This is a skill written in the open [Agent Skills](https://agentskills.io/specif
 
 The three packages point to the same skill and require no backend or MCP server.
 
+Clients that read the Agent Skills format directly, including Gemini CLI, Antigravity, Zed, Warp, Windsurf and Amp, load the skill from `skills/agentic-readiness-assessment/` with no conversion. A [`gemini-extension.json`](gemini-extension.json) manifest is present for Gemini CLI's extension installer.
+
 ## Installation
 
 ### Cursor
@@ -68,11 +70,41 @@ claude plugin marketplace add exadel-inc/agentic-readiness-assessment
 claude plugin install agentic-readiness-assessment@exadel-agent-plugins
 ```
 
-Until the marketplace file reaches the default branch, clone the repository and load it directly with `claude --plugin-dir .`.
+To try it without adding a marketplace, clone the repository and load it directly with `claude --plugin-dir .`.
 
 ### ChatGPT and Codex
 
 Public installation will be available after OpenAI review and publication. The native Codex package is already present in the repository for submission and local packaging.
+
+### Gemini CLI
+
+```sh
+gemini extensions install https://github.com/exadel-inc/agentic-readiness-assessment
+```
+
+Or install the skill on its own, without the extension manifest:
+
+```sh
+gemini skills install https://github.com/exadel-inc/agentic-readiness-assessment --path skills/agentic-readiness-assessment
+```
+
+### GitHub Copilot CLI
+
+```sh
+copilot plugin marketplace add exadel-inc/agentic-readiness-assessment
+```
+
+### JetBrains Junie
+
+Open `/extensions`, go to the Marketplaces tab, choose Add marketplace and paste the repository URL. Junie reads the `.claude-plugin/marketplace.json` in this repository.
+
+### Any client that reads Agent Skills
+
+```sh
+npx skills add exadel-inc/agentic-readiness-assessment
+```
+
+For Zed, Warp, Windsurf, Amp and anything else that discovers skills on the filesystem, copy `skills/agentic-readiness-assessment/` into the client's skills directory, usually `.agents/skills/` in the repository you want to assess.
 
 ### From source
 
@@ -202,8 +234,16 @@ Those are the questions people ask us next, so we do them as work:
 
 If any of that would help: [exadel.com/contact](https://exadel.com/contact/).
 
-## Contact
+## Support
 
-Open an [issue](https://github.com/exadel-inc/agentic-readiness-assessment/issues) for anything about the assessment itself.
+Open an [issue](https://github.com/exadel-inc/agentic-readiness-assessment/issues) for anything about the assessment itself. Security reports go through [SECURITY.md](SECURITY.md).
+
+For anything commercial: [exadel.com/contact](https://exadel.com/contact/).
+
+## Privacy
+
+[Exadel privacy policy](https://exadel.com/privacy-policy) and [terms](https://exadel.com/terms-and-conditions). The plugin itself collects nothing and transmits nothing.
+
+## Contact
 
 Built by [Exadel](https://exadel.com/).

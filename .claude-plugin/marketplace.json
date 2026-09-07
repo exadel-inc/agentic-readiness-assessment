@@ -16,7 +16,14 @@
         "agentic-readiness",
         "codebase-analysis",
         "assessment"
-      ]
+      ],
+      "homepage": "https://github.com/exadel-inc/agentic-readiness-assessment",
+      "repository": "https://github.com/exadel-inc/agentic-readiness-assessment",
+      "license": "Apache-2.0",
+      "author": {
+        "name": "Exadel",
+        "url": "https://exadel.com"
+      }
     }
   ]
 }
