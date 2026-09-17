@@ -1,0 +1,29 @@
+name: HOL Plugin Scanner
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Scan plugin
+        uses: hashgraph-online/ai-plugin-scanner-action@011b0f4e0ad6d53298d158c842177f196a1b460d # v1
+        with:
+          plugin_dir: "."
+          mode: scan
+          min_score: 80
+          fail_on_severity: high
+          online: "false"
+          upload_sarif: "false"
+          submission_enabled: "false"
+          pr_comment: "off"

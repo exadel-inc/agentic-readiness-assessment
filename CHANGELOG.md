@@ -28,6 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The README line saying the marketplace catalog had not yet reached the default branch. It reached it in 4.1.1.
 
+## [4.5.1] - 2026-09-17
+
+### Added
+
+- A HOL Plugin Scanner workflow for the community Codex marketplace requirements, with offline scanning and no automated submissions.
+- The Codex composer icon field, using the existing Exadel logo.
+
+### Changed
+
+- GitHub Actions in the manifest-validation workflow are pinned to immutable commits.
+- Platform manifest versions are synchronized at `4.5.1`. The assessment prompt and scoring contract are unchanged.
+
 ## [4.5.0] - 2026-09-07
 
 ### Added

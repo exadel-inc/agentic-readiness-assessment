@@ -1,5 +1,5 @@
 {
   "name": "agentic-readiness-assessment",
-  "version": "4.5.0",
+  "version": "4.5.1",
   "description": "Audits a repository for how ready it is for AI coding agents and returns a prioritized fix backlog with evidence for every finding."
 }
