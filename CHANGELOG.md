@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.1] - 2026-09-17
+
 ### Added
 
 - `gemini-extension.json`, the manifest the Gemini CLI extension gallery indexes.
@@ -14,8 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Install instructions for Gemini CLI, GitHub Copilot CLI, JetBrains Junie, `npx skills add`, and clients that discover skills on the filesystem.
 - Support and privacy sections in the README.
 - A CI workflow that parses every manifest, checks that the mirrored versions agree with `plugin.json`, and runs `claude plugin validate . --strict`.
+- Automatic `v<version>` tags and published GitHub releases after validation succeeds on `main`.
+- A CLA signature workflow for pull request contributors.
 - `author`, `homepage`, `repository` and `license` on the Claude Code marketplace entry.
 - Gemini and other-client publishing routes in [docs/PUBLISHING.md](docs/PUBLISHING.md).
+- A HOL Plugin Scanner workflow for the community Codex marketplace requirements, with offline scanning and no automated submissions.
+- The Codex composer icon field, using the existing Exadel logo.
+- Dependabot updates for pinned GitHub Actions.
 
 ### Changed
 
@@ -23,23 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The pull request template moved from the repository root to `.github/`, so the plugin payload carries only what a client needs.
 - One product name that survived the first redaction pass generalized in the published example report, and the redaction note in `examples/README.md` corrected to match.
 - The Exadel services pitch appears once, at the end of the README, instead of twice.
+- GitHub Actions in the validation workflows are pinned to immutable commits.
+- The marketplace scanner uses the public-marketplace profile and runs the Cisco deep skill scan.
+- Platform manifest versions are synchronized at `4.5.1`. The assessment prompt and scoring contract are unchanged.
 
 ### Removed
 
 - The README line saying the marketplace catalog had not yet reached the default branch. It reached it in 4.1.1.
-
-## [4.5.1] - 2026-09-17
-
-### Added
-
-- A HOL Plugin Scanner workflow for the community Codex marketplace requirements, with offline scanning and no automated submissions.
-- The Codex composer icon field and a square Colleague icon for both Codex image fields.
-
-### Changed
-
-- GitHub Actions in the manifest-validation workflow are pinned to immutable commits.
-- Platform manifest versions are synchronized at `4.5.1`. The assessment prompt and scoring contract are unchanged.
-- The README header image is named `banner.png`; `logo.png` contains the square Colleague icon.
 
 ## [4.5.0] - 2026-09-07
 
@@ -73,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The version in `plugin.json` is the canonical source of truth for the skill and is mirrored into the platform manifests. The skill reads the root manifest and records it as `prompt_version` in generated reports. See [Versioning](README.md#versioning).
 
-[Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/549c87a...main
-[4.5.0]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/549c87a
-[4.1.1]: https://github.com/exadel-inc/agentic-readiness-assessment/commits/d0e74a4
+[Unreleased]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/v4.5.1...main
+[4.5.1]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/v4.5.0...v4.5.1
+[4.5.0]: https://github.com/exadel-inc/agentic-readiness-assessment/compare/v4.1.1...v4.5.0
+[4.1.1]: https://github.com/exadel-inc/agentic-readiness-assessment/releases/tag/v4.1.1

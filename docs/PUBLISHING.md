@@ -4,8 +4,8 @@ This repository is one plugin root shared by Cursor, Codex, and Claude Code. The
 
 ## Before a release
 
-1. Update the canonical version in `plugin.json` and mirror it in `.codex-plugin/plugin.json` and `.claude-plugin/plugin.json`.
-2. Record the change in `CHANGELOG.md`.
+1. Update the canonical version in `plugin.json` and mirror it in `gemini-extension.json`, `.codex-plugin/plugin.json` and `.claude-plugin/plugin.json`.
+2. Move the shipped changes from `Unreleased` into the new version section in `CHANGELOG.md`.
 3. Validate the JSON files:
 
    ```sh
@@ -29,11 +29,15 @@ This repository is one plugin root shared by Cursor, Codex, and Claude Code. The
 
    In Claude Code, run `/agentic-readiness-assessment:agentic-readiness-assessment` from a disposable test repository.
 
+## GitHub release
+
+Merge the synchronized version bump into `main`. After manifest and Claude validation pass, CI creates the `v<version>` tag on that exact `main` commit and publishes a GitHub release with generated notes. Re-running CI is safe: an existing release is skipped, while a tag that points at a different commit fails the job.
+
 ## Gemini CLI
 
 The gallery at [geminicli.com/extensions](https://geminicli.com/extensions/) has no submission form. A crawler indexes public GitHub repositories that carry the `gemini-cli-extension` topic and a root `gemini-extension.json`. Both are in place once this branch merges and the topic is set on the repository.
 
-Keep `gemini-extension.json`'s `version` in lockstep with `plugin.json`. If a GitHub release is cut, its tag must match that version.
+Keep `gemini-extension.json`'s `version` in lockstep with `plugin.json`. The automatic GitHub release uses that version with a `v` prefix for its tag.
 
 ## Other clients
 
