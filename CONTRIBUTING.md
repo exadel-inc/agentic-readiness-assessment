@@ -22,10 +22,7 @@ A change to `SKILL.md` changes what every user's report looks like. Read [Versio
 ## Checks
 
 ```sh
-python3 -m json.tool plugin.json > /dev/null
-python3 -m json.tool gemini-extension.json > /dev/null
-python3 -m json.tool .codex-plugin/plugin.json > /dev/null
-python3 -m json.tool .claude-plugin/plugin.json > /dev/null
+python3 scripts/sync_versions.py --check
 python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 claude plugin validate . --strict
 ```

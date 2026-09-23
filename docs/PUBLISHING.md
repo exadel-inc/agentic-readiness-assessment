@@ -4,14 +4,17 @@ This repository is one plugin root shared by Cursor, Codex, and Claude Code. The
 
 ## Before a release
 
-1. Update the canonical version in `plugin.json` and mirror it in `gemini-extension.json`, `.codex-plugin/plugin.json` and `.claude-plugin/plugin.json`.
-2. Move the shipped changes from `Unreleased` into the new version section in `CHANGELOG.md`.
-3. Validate the JSON files:
+1. Set the canonical version and all platform manifest versions together:
 
    ```sh
-   python3 -m json.tool plugin.json >/dev/null
-   python3 -m json.tool .codex-plugin/plugin.json >/dev/null
-   python3 -m json.tool .claude-plugin/plugin.json >/dev/null
+   python3 scripts/sync_versions.py X.Y.Z
+   ```
+
+2. Move the shipped changes from `Unreleased` into the new version section in `CHANGELOG.md`.
+3. Verify the synchronized versions and validate the remaining JSON file:
+
+   ```sh
+   python3 scripts/sync_versions.py --check
    python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
    ```
 
