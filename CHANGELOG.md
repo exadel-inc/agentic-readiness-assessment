@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - A dependency-free script that updates or verifies the version across every platform manifest.
+- A repository script for the GitHub tag and release publication performed by CI.
 
 ## [4.5.1] - 2026-09-17
 
