@@ -1,6 +1,6 @@
 # Agentic Readiness Assessment
 
-![](logo.png)
+![Exadel AI Agentic Readiness Assessment](banner.png)
 
 **Agentic Readiness Assessment** is an agent plugin that evaluates a software repository for readiness to be developed and maintained by AI coding agents. It inspects the repository in place and produces an evidence-based readiness scorecard together with actionable recommendations.
 
