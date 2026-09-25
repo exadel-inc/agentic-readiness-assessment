@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   manifests:
     name: Manifests parse and agree
@@ -20,24 +23,10 @@ jobs:
           done
 
       - name: Versions match the canonical manifest
-        run: |
-          python3 - <<'PY'
-          import json, sys
-          canonical = json.load(open('plugin.json'))['version']
-          mirrors = {
-              'gemini-extension.json': 'version',
-              '.codex-plugin/plugin.json': 'version',
-              '.claude-plugin/plugin.json': 'version',
-          }
-          bad = []
-          for path, key in mirrors.items():
-              v = json.load(open(path))[key]
-              if v != canonical:
-                  bad.append(f"{path} is {v}, plugin.json is {canonical}")
-          if bad:
-              sys.exit("Version mismatch:\n  " + "\n  ".join(bad))
-          print(f"all manifests at {canonical}")
-          PY
+        run: python3 scripts/sync_versions.py --check
+
+      - name: Release script parses
+        run: bash -n scripts/publish_release.sh
 
       - name: The skill is where every client looks for it
         run: test -f skills/agentic-readiness-assessment/SKILL.md
@@ -54,3 +43,25 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
       - name: Validate
         run: claude plugin validate . --strict
+
+  release:
+    name: Tag and publish release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [manifests, claude]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: plugin-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Publish version
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/publish_release.sh
