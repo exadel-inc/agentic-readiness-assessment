@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A closing line at the end of every report, pointing to Exadel's AI Maturity & Readiness Assessment with a tracked link.
 - `gemini-extension.json`, the manifest the Gemini CLI extension gallery indexes.
 - `SECURITY.md`, with a disclosure channel and a plain statement of what the skill reads, runs and writes on a user's machine.
 - Install instructions for Gemini CLI, GitHub Copilot CLI, JetBrains Junie, `npx skills add`, and clients that discover skills on the filesystem.
