@@ -7,14 +7,14 @@ This repository is one plugin root shared by Cursor, Codex, and Claude Code. The
 1. Set the canonical version and all platform manifest versions together:
 
    ```sh
-   python3 scripts/sync_versions.py X.Y.Z
+   python3 .github/scripts/sync_versions.py X.Y.Z
    ```
 
 2. Move the shipped changes from `Unreleased` into the new version section in `CHANGELOG.md`.
 3. Verify the synchronized versions and validate the remaining JSON file:
 
    ```sh
-   python3 scripts/sync_versions.py --check
+   python3 .github/scripts/sync_versions.py --check
    python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
    ```
 

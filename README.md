@@ -192,7 +192,7 @@ Bump it as follows:
 Set the canonical version and every platform manifest version together:
 
 ```sh
-python3 scripts/sync_versions.py X.Y.Z
+python3 .github/scripts/sync_versions.py X.Y.Z
 ```
 
 Scores are directly comparable across reports sharing the same `MAJOR.MINOR`. A minor bump may shift scores, so compare across one with care; a major bump breaks the contract, so do not compare across it at all.

@@ -22,7 +22,7 @@ A change to `SKILL.md` changes what every user's report looks like. Read [Versio
 ## Checks
 
 ```sh
-python3 scripts/sync_versions.py --check
+python3 .github/scripts/sync_versions.py --check
 python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 claude plugin validate . --strict
 ```
