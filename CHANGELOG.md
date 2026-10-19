@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A closing line at the end of every report, pointing to Exadel's AI Maturity & Readiness Assessment with a tracked link.
 - A dependency-free script that updates or verifies the version across every platform manifest.
 - A repository script for the GitHub tag and release publication performed by CI.
 
