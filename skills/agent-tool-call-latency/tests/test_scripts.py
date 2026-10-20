@@ -1,0 +1,202 @@
+"""Run: python3 -m unittest discover -s skills/agent-tool-call-latency/tests"""
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import unittest
+
+SCRIPTS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts")
+sys.path.insert(0, SCRIPTS)
+
+import aggregate  # noqa: E402
+from common import Context, first_cmd, guess_kind, redact, since_ms  # noqa: E402
+
+T0 = "2026-10-01T10:00:00.000Z"
+
+
+def iso(seconds):
+    return f"2026-10-01T10:{int(seconds) // 60:02d}:{seconds % 60:06.3f}Z"
+
+
+def read_jsonl(path):
+    with open(path) as fh:
+        return [json.loads(line) for line in fh]
+
+
+def read_text(path):
+    with open(path) as fh:
+        return fh.read()
+
+
+def write_jsonl(path, rows):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as fh:
+        for r in rows:
+            fh.write(json.dumps(r) + "\n")
+
+
+def claude_rows(cwd="/home/u/proj", session="s-claude"):
+    meta = dict(sessionId=session, cwd=cwd, entrypoint="cli", version="2.1.300")
+    return [
+        # Two parallel calls in one message: the message's second block streams 2 s after the first.
+        dict(meta, type="assistant", timestamp=iso(0), permissionMode="auto",
+             message=dict(id="m1", content=[dict(type="tool_use", id="tu1", name="Bash", input=dict(command="pnpm e2e"))])),
+        dict(meta, type="assistant", timestamp=iso(2),
+             message=dict(id="m1", content=[dict(type="tool_use", id="tu2", name="Read", input=dict(file_path="a"))])),
+        dict(meta, type="user", timestamp=iso(2.05), message=dict(content=[dict(type="tool_result", tool_use_id="tu2")])),
+        dict(meta, type="user", timestamp=iso(12), permissionDecision=dict(reasonType="classifier", source="config"),
+             message=dict(content=[dict(type="tool_result", tool_use_id="tu1", is_error=False)])),
+        dict(meta, type="assistant", timestamp=iso(13),
+             message=dict(id="m2", content=[dict(type="tool_use", id="tu3", name="mcp__playwright__browser_click", input={})])),
+        dict(meta, type="user", timestamp=iso(14), message=dict(content=[dict(type="tool_result", tool_use_id="tu3")])),
+    ]
+
+
+def codex_rows(originator="Codex Desktop"):
+    return [
+        dict(timestamp=T0, type="session_meta", payload=dict(type="session_meta", id="s-codex", cwd="/home/u/proj",
+                                                             originator=originator, source="cli")),
+        dict(timestamp=T0, type="event_msg", payload=dict(type="item_completed", started_at_ms=1790000000000,
+                                                          completed_at_ms=1790000004000,
+                                                          item=dict(type="CommandExecution", id="c1", exit_code=1,
+                                                                    command=["/bin/zsh", "-lc", "pytest -q"]))),
+        dict(timestamp=iso(5), type="response_item", payload=dict(type="function_call", call_id="f1", name="wait_agent")),
+        dict(timestamp=iso(35), type="response_item", payload=dict(type="function_call_output", call_id="f1")),
+    ]
+
+
+class Helpers(unittest.TestCase):
+    def test_first_cmd_skips_prefixes_wrappers_and_value_flags(self):
+        self.assertEqual(first_cmd("cd /x && FOO=1 timeout 60 pnpm --filter app e2e"), "pnpm e2e")
+        self.assertEqual(first_cmd("lockf -t 600 /tmp/x.lock pnpm test"), "pnpm test")
+        self.assertEqual(first_cmd("python3 - <<'EOF'"), "python3 <inline>")
+
+    def test_redact_masks_tokens_and_keeps_the_command(self):
+        out = redact("GITHUB_TOKEN=ghp_abcdefghijklmnopqrstuv gh pr list")
+        self.assertNotIn("ghp_", out)
+        self.assertIn("gh pr list", out)
+
+    def test_guess_kind(self):
+        self.assertEqual(guess_kind("run_terminal_command"), "shell")
+        self.assertEqual(guess_kind("str_replace_editor"), "edit")
+        self.assertEqual(guess_kind("mcp__github__get_pr"), "mcp")
+
+
+class Adapters(unittest.TestCase):
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+        self.ctx = Context(self.home, since_ms("2026-09-01"))
+
+    def extract(self, *extra):
+        out = os.path.join(self.home, "calls.jsonl")
+        subprocess.run([sys.executable, os.path.join(SCRIPTS, "extract.py"), "--home", self.home, "--since",
+                        "2026-09-01", "--out", out, *extra], check=True, capture_output=True)
+        return {c["id"]: c for c in read_jsonl(out)}
+
+    def test_claude_times_parallel_calls_from_the_end_of_their_message(self):
+        write_jsonl(os.path.join(self.home, ".claude/projects/p/s.jsonl"), claude_rows())
+        calls = self.extract()
+        self.assertEqual(calls["tu1"]["dur_ms"], 10_000)  # from the message's last block, not its own
+        self.assertEqual(calls["tu2"]["dur_ms"], 50)  # returned mid-stream, so its own block is the start
+        self.assertEqual(calls["tu1"]["kind"], "shell")
+        self.assertEqual(calls["tu1"]["approval"], "classifier")
+        self.assertEqual(calls["tu1"]["mode"], "auto")
+        self.assertEqual(calls["tu3"]["mcp_server"], "playwright")
+        self.assertNotIn("_cwd", calls["tu1"])
+
+    def test_codex_items_function_calls_and_kinds(self):
+        write_jsonl(os.path.join(self.home, ".codex/sessions/2026/10/01/r.jsonl"), codex_rows())
+        calls = self.extract()
+        self.assertEqual(calls["c1"]["dur_ms"], 4000)
+        self.assertEqual(calls["c1"]["command"], "pytest -q")
+        self.assertTrue(calls["c1"]["error"])
+        self.assertEqual(calls["c1"]["timing"], "exact")
+        self.assertEqual(calls["f1"]["kind"], "wait")
+        self.assertEqual(calls["f1"]["dur_ms"], 30_000)
+
+    def test_t3_claims_relabel_and_dedupe_copied_history(self):
+        rows = claude_rows(cwd="/home/u/.t3/worktrees/proj/x")
+        write_jsonl(os.path.join(self.home, ".claude/projects/p/s.jsonl"), rows)
+        write_jsonl(os.path.join(self.home, ".claude/projects/p/s-resumed.jsonl"), rows)
+        os.makedirs(os.path.join(self.home, ".t3/userdata"))
+        sqlite3.connect(os.path.join(self.home, ".t3/userdata/statev2.sqlite")).close()
+        calls = self.extract()
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(calls["tu1"]["harness"], "T3 Code → Claude Code")
+
+    def test_codex_originator_names_the_frontend(self):
+        write_jsonl(os.path.join(self.home, ".codex/sessions/2026/10/01/r.jsonl"), codex_rows("T3 Code"))
+        self.assertEqual(self.extract()["c1"]["harness"], "T3 Code → Codex")
+
+    def test_exclude_cwd_drops_benchmark_sessions(self):
+        write_jsonl(os.path.join(self.home, ".claude/projects/p/s.jsonl"), claude_rows(cwd="/tmp/bench-runs/a"))
+        self.assertEqual(self.extract("--exclude-cwd", "/bench-runs/"), {})
+
+    def test_extra_adapter_file_is_loaded(self):
+        path = os.path.join(self.home, "my_harness.py")
+        with open(path, "w") as fh:
+            fh.write("from common import record\nNAME = 'mine'\n"
+                     "def detect(ctx):\n    return ['x']\n"
+                     "def records(ctx):\n    yield record(agent='Mine', harness='Mine', session='s', id='1',"
+                     " ts=1790000000000, dur_ms=5, tool='run', kind='shell', command='ls')\n")
+        self.assertEqual(self.extract("--adapter", path, "--only", "mine")["1"]["agent"], "Mine")
+
+    def test_hook_capture_pairs_pre_and_post(self):
+        log = os.path.join(self.home, "hooks.jsonl")
+        env = dict(os.environ, AGENT_LATENCY_HOOK_LOG=log)
+        for event in ("pre", "post"):
+            payload = json.dumps(dict(session_id="s", tool_name="Bash", tool_use_id="h1", tool_input=dict(command="ls")))
+            subprocess.run([sys.executable, os.path.join(SCRIPTS, "hook_capture.py"), event, "--agent", "X"],
+                           input=payload, text=True, env=env, check=True)
+        out = os.path.join(self.home, "calls.jsonl")
+        subprocess.run([sys.executable, os.path.join(SCRIPTS, "extract.py"), "--home", self.home, "--since",
+                        "2026-01-01", "--only", "hooklog", "--out", out], check=True, env=env, capture_output=True)
+        (call,) = read_jsonl(out)
+        self.assertEqual((call["id"], call["kind"], call["command"], call["timing"]), ("h1", "shell", "ls", "exact"))
+
+    def test_hook_capture_never_fails_the_tool(self):
+        result = subprocess.run([sys.executable, os.path.join(SCRIPTS, "hook_capture.py"), "pre"], input="not json",
+                                text=True, capture_output=True,
+                                env=dict(os.environ, AGENT_LATENCY_HOOK_LOG="/nonexistent/dir/x.jsonl"))
+        self.assertEqual((result.returncode, result.stdout), (0, ""))
+
+    def test_validator_rejects_bad_records(self):
+        path = os.path.join(self.home, "calls.jsonl")
+        write_jsonl(path, [dict(agent="a", harness="h", session="s", id="1", ts=1790000000000, dur_ms=-1,
+                                tool="t", kind="nope")])
+        result = subprocess.run([sys.executable, os.path.join(SCRIPTS, "validate_calls.py"), path],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("negative dur_ms", result.stdout)
+        self.assertIn("kind 'nope'", result.stdout)
+
+
+class Aggregate(unittest.TestCase):
+    def test_find_cap_spots_a_timeout_cluster(self):
+        self.assertEqual(aggregate.find_cap([1000, 70_000, 600_100, 600_400, 601_000]), (600_100, 3))
+        self.assertIsNone(aggregate.find_cap([70_000, 200_000, 600_000]))
+
+    def test_classify_puts_heavy_steps_before_setup(self):
+        patterns = [(c, l, aggregate.re.compile(p)) for c, l, p in aggregate.SHELL_PATTERNS]
+        call = dict(kind="shell", command="mkdir -p out && blender -b scene.blend")
+        self.assertEqual(aggregate.classify(call, patterns), ("Render / 3D", "Blender headless"))
+        self.assertEqual(aggregate.classify(dict(kind="shell", command="until curl -s x; do sleep 2; done"), patterns),
+                         ("Wait / poll", "until loop"))
+
+    def test_summary_end_to_end(self):
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "calls.jsonl")
+        rows = [dict(agent="A", harness="H", session="s", id=str(i), ts=1790000000000 + i, dur_ms=600_000 + i,
+                     tool="Bash", kind="shell", command="until x; do sleep 5; done") for i in range(4)]
+        write_jsonl(path, rows)
+        subprocess.run([sys.executable, os.path.join(SCRIPTS, "aggregate.py"), path, "--out-dir", d], check=True,
+                       capture_output=True)
+        summary = json.loads(read_text(os.path.join(d, "summary.json")))
+        self.assertEqual(summary["caps"][0]["n"], 4)
+        self.assertIn("## Calls ending at a timeout cap", read_text(os.path.join(d, "summary.md")))
+
+
+if __name__ == "__main__":
+    unittest.main()
