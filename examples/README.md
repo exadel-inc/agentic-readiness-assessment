@@ -20,5 +20,12 @@ Six identifiers internal to the audited project were replaced before publishing:
 
 The report is the file the skill writes to `~/.cache/agent-tool-call-latency/<date>/report.md`. The run found waste between 45 and 74 hours. Three of its fixes came from an earlier audit of the same machine and were applied the day before, so the report also shows their first measured effect, over 1.5 days. The Cursor and Antigravity adapters were written during this run, following `references/ADAPTERS.md`, and now ship with the skill.
 
-One identifier was replaced before publishing: the names of three lock files, which carried the name of a project on the machine. The report already names repositories by what they are (a desktop TTS app, a 3D game, a workflow-engine demo project). Numbers, findings, fixes and statuses are exactly as generated.
+Five kinds of identifier were generalised before publishing:
+- repository names, replaced by what each repository is (a desktop app, a 3D game, an agent platform, a workflow-engine demo project);
+- the names of three lock files, which carried a project's name;
+- a repository-internal path prefix on two source references;
+- the names of the credential directories the deny rules cover;
+- the paths of the user's agent configuration files.
+
+Numbers, findings, fixes and statuses are exactly as generated. The skill now names repositories generically on its own, so the next report needs less of this.
 
