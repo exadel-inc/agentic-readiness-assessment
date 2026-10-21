@@ -7,7 +7,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = (
     "plugin.json",
-    "gemini-extension.json",
     ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
 )
