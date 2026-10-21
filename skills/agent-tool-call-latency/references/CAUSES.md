@@ -92,4 +92,4 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 ## Not latency: waiting on the user
 
-`Waiting on you` is time the user took to answer a question or an approval prompt. Report it apart from tool time. It points at approval prompts worth replacing with rules, not at slow tools.
+`Waiting on you` is time the user took to answer a question or an approval prompt. Report it on its own line, outside the waste range: it describes how the machine is used (agents left running while nobody watches), not a slow tool. Where it comes from prompts the user never needed to see, an allow rule removes them; rank that fix with its hours marked as user wait.

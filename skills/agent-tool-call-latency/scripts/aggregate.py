@@ -8,8 +8,10 @@
 "Scripts & data" bucket.
 """
 import argparse
+import bisect
 import collections
 import json
+import math
 import os
 import re
 import statistics
@@ -24,7 +26,7 @@ SHELL_PATTERNS = [
     ("Wait / poll", "until loop", r"\buntil\b"),
     ("Wait / poll", "while + sleep loop", r"\bwhile\b.*\bsleep\b"),
     ("Wait / poll", "watch command", r"\bgh (run|pr) (watch|checks\b.*--watch)|--watch\b|\bwait\.sh\b"),
-    ("Tests: e2e / UI", "lock-wrapped run", r"\b(lockf|flock|withlock(\.py)?)\b"),
+    ("Tests: e2e / UI", "lock-wrapped run", r"\b(lockf|flock)\b"),
     ("Tests: e2e / UI", "e2e suite", r"(pnpm|npm|bun|yarn)( run)? (test:)?e2e\b|playwright test|cypress run|\bpytest\b[^\n;&|]*\be2e"),
     ("Tests: e2e / UI", "screenshot run", r"\bshoot\.sh\b|\bscreencapture\b|\bshot\.(ts|mjs|js|py)\b"),
     ("Render / 3D", "Blender headless", r"\bblender\s+(-b|--background)\b"),
@@ -76,8 +78,9 @@ def classify(c, patterns):
 
 
 def q(xs, p):
+    """Nearest-rank percentile: the smallest value with at least p of the values at or below it."""
     xs = sorted(xs)
-    return xs[min(len(xs) - 1, int(p * len(xs)))] if xs else None
+    return xs[max(0, math.ceil(p * len(xs)) - 1)] if xs else None
 
 
 def stats(calls):
@@ -86,19 +89,49 @@ def stats(calls):
                 hours=round(sum(d) / 3.6e6, 2), slow=sum(v >= SLOW_MS for v in d))
 
 
-def find_cap(durations):
-    """The duration a tool keeps hitting at its top end, i.e. a timeout cap: at least 3 calls
-    within 2% of each other, above a minute, with at most 2 calls beyond them."""
-    longs = sorted(v for v in durations if v >= CAP_MIN_MS)
-    best = None
-    for i in range(len(longs)):
+def find_caps(calls):
+    """Durations a tool keeps ending at, i.e. timeout caps, as [(cap_ms, calls), ...].
+
+    A cap is a spike above a minute: calls from at least 3 separate moments ending within
+    CAP_SPREAD of the same duration, well above what the surrounding range (0.8x to 1.25x) predicts
+    for a window that narrow, since ordinary work also often takes about as long as a cap. A tool
+    can have several (Claude Code's Bash stops at its 2-minute default and at any longer timeout the
+    agent asks for). Calls that end together, parallel calls from one message or edits queued behind
+    one approval prompt, count once; calls that waited on the user are left out.
+    """
+    longs = sorted((c["dur_ms"], round((c["ts"] + c["dur_ms"]) / 10_000)) for c in calls
+                   if c["dur_ms"] >= CAP_MIN_MS * 0.8 and not c.get("background") and not c.get("human_wait"))
+    durations = [d for d, _ in longs]
+    spikes = []
+    for i, (low, _) in enumerate(longs):
+        if low < CAP_MIN_MS:
+            continue
+        spread = cap_spread(low)
         j = i
-        while j + 1 < len(longs) and longs[j + 1] <= longs[i] * 1.02:
+        while j + 1 < len(longs) and longs[j + 1][0] <= low + spread:
             j += 1
-        size, beyond = j - i + 1, len(longs) - j - 1
-        if size >= 3 and beyond <= 2 and (best is None or size > best[1]):
-            best = (longs[i], size)
-    return best
+        ends = {e for _, e in longs[i:j + 1]}
+        window = longs[bisect.bisect_left(durations, low * 0.8):bisect.bisect_right(durations, low * 1.25)]
+        expected = len({e for _, e in window} - ends) * spread / (0.45 * low - spread)
+        if len(ends) >= 3 + 3 * expected:
+            spikes.append((len(ends), low, i, j))
+    caps, taken = [], set()
+    for size, low, i, j in sorted(spikes, key=lambda s: (-s[0], s[1])):
+        if taken.isdisjoint(range(i, j + 1)):
+            taken.update(range(i, j + 1))
+            caps.append((low, size))
+    return sorted(caps)
+
+
+def cap_spread(cap_ms):
+    """How far past a cap a capped call can end: the harness's own overhead, about 2 s, or 0.5%."""
+    return max(2_000, cap_ms * 0.005)
+
+
+def at_cap(call, caps):
+    if call.get("background") or call.get("human_wait"):
+        return False
+    return any(cap <= call["dur_ms"] <= cap + cap_spread(cap) for cap, _ in caps)
 
 
 def table(rows, cols):
@@ -135,12 +168,11 @@ def main():
     for c in calls:
         by_tool[(c["harness"], c["tool"])].append(c)
     for key, cs in by_tool.items():
-        cap = find_cap([c["dur_ms"] for c in cs if not c.get("background")])
-        if cap:
-            caps[key] = cap[0]
+        found = find_caps(cs)
+        if found:
+            caps[key] = found
     for c in calls:
-        cap = caps.get((c["harness"], c["tool"]))
-        c["capped"] = bool(cap and cap <= c["dur_ms"] <= cap * 1.02)
+        c["capped"] = at_cap(c, caps.get((c["harness"], c["tool"]), []))
 
     def capped(cs):
         return sum(c["capped"] for c in cs)
@@ -170,10 +202,14 @@ def main():
     out["patterns_by_hours"] = sorted(patterns_out, key=lambda r: -r["hours"])[:30]
     out["patterns_by_p50"] = sorted([p for p in patterns_out if p["n"] >= 10], key=lambda r: -r["p50"])[:15]
 
-    out["caps"] = sorted([dict(harness=h, tool=t, cap_ms=cap, n=capped(by_tool[(h, t)]),
-                               hours=round(sum(c["dur_ms"] for c in by_tool[(h, t)] if c["capped"]) / 3.6e6, 2),
-                               labels=collections.Counter(c["label"] for c in by_tool[(h, t)] if c["capped"]).most_common(5))
-                          for (h, t), cap in caps.items()], key=lambda r: -r["hours"])
+    cap_rows = []
+    for (h, t), found in caps.items():
+        for cap, _ in found:
+            hit = [c for c in by_tool[(h, t)] if at_cap(c, [(cap, 0)])]
+            cap_rows.append(dict(harness=h, tool=t, cap_ms=cap, n=len(hit),
+                                 hours=round(sum(c["dur_ms"] for c in hit) / 3.6e6, 2),
+                                 labels=collections.Counter(c["label"] for c in hit).most_common(5)))
+    out["caps"] = sorted(cap_rows, key=lambda r: -r["hours"])
 
     # Cheap operations should cost the same everywhere. Where they don't, the gap is harness
     # overhead (an approval check, a slow release), not the work.
@@ -227,7 +263,10 @@ def main():
 
 def render(o):
     t = o["total"]
-    md = [f"# Tool-call latency summary\n\n{t['n']} calls, {t['hours']} h of tool time.\n"]
+    wait = next((r for r in o["categories"] if r["category"] == "Waiting on you"), None)
+    waited = (f" {wait['hours']} h of it is agents waiting on the user (approval prompts and questions): "
+              "report it on its own line, apart from need and waste." if wait else "")
+    md = [f"# Tool-call latency summary\n\n{t['n']} calls, {t['hours']} h of tool time.{waited}\n"]
     md.append("## By harness\n\n" + table(o["harnesses"], [
         ("Harness", lambda r: r["harness"]), ("Calls", lambda r: r["n"]), ("Hours", lambda r: r["hours"]),
         ("p50", lambda r: sec(r["p50"])), ("p90", lambda r: sec(r["p90"])), ("≥30 s", lambda r: r["slow"]),

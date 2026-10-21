@@ -18,7 +18,7 @@ Six identifiers internal to the audited project were replaced before publishing:
 |---|---|---:|---:|---|---|
 | A developer laptop (macOS) | 2026-09-21 to 2026-10-21 | 120,896 | 282 h | Claude Code, Codex, T3 Code, Cursor, Antigravity | [report.md](agent-tool-call-latency/report.md) |
 
-The report is the file the skill writes to `~/.cache/agent-tool-call-latency/<date>/report.md`. The run found waste between 45 and 74 hours. Three of its fixes came from an earlier audit of the same machine and were applied the day before, so the report also shows their first measured effect, over 1.5 days. The Cursor and Antigravity adapters were written during this run, following `references/ADAPTERS.md`, and now ship with the skill.
+The report is the file the skill writes to `~/.cache/agent-tool-call-latency/<date>/report.md`. The run found between 24 and 53 hours of waste, and 34 hours of agents waiting on the user, which it reports apart from waste. Three of its fixes came from an earlier audit of the same machine and were applied the day before, so the report also shows their first measured effect, over 1.5 days. The Cursor and Antigravity adapters were written during this run, following `references/ADAPTERS.md`, and now ship with the skill.
 
 Five kinds of identifier were generalised before publishing:
 - repository names, replaced by what each repository is (a desktop app, a 3D game, an agent platform, a workflow-engine demo project);

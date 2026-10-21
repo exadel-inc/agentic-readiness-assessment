@@ -67,14 +67,14 @@ def main():
                 if bad <= 20:
                     print(f"line {n}: {'; '.join(errors)}")
                 continue
-            keys[(rec["agent"], rec["id"], round(rec["ts"]))] += 1
+            keys[(rec["agent"], rec["id"])] += 1
             recs.append(rec)
     dupes = sum(v - 1 for v in keys.values() if v > 1)
 
     by_harness = collections.defaultdict(list)
     for r in recs:
         by_harness[r["harness"]].append(r)
-    print(f"{len(recs)} valid calls, {bad} invalid, {dupes} duplicate (agent, id, ts)")
+    print(f"{len(recs)} valid calls, {bad} invalid, {dupes} duplicate (agent, id)")
     rng = random.Random(0)
     for harness, rs in sorted(by_harness.items(), key=lambda kv: -len(kv[1])):
         n = len(rs)

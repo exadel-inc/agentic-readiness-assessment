@@ -7,7 +7,7 @@ paired from `function_call` / `function_call_output` line timestamps (derived). 
 import glob
 import os
 
-from common import guess_kind, iso_ms, read_jsonl, record
+from common import each_source, guess_kind, iso_ms, read_jsonl, record
 
 NAME = "codex"
 AGENT = "Codex"
@@ -38,8 +38,7 @@ def detect(ctx):
 
 
 def records(ctx):
-    for path in _files(ctx):
-        yield from _rollout(ctx, path)
+    return each_source(NAME, _files(ctx), lambda path: _rollout(ctx, path))
 
 
 def _rollout(ctx, path):
@@ -51,9 +50,12 @@ def _rollout(ctx, path):
             continue
         if d.get("type") == "session_meta":
             originator, sid, cwd = p.get("originator"), p.get("id"), p.get("cwd") or ""
+            # `source.subagent` is a dict for spawned agents and the reviewer, and a plain string
+            # such as "review" for a /review session.
             src = p.get("source")
-            guardian = isinstance(src, dict) and (src.get("subagent") or {}).get("other") == "guardian"
-            sub = isinstance(src, dict) and "subagent" in src and not guardian
+            spawned = src.get("subagent") if isinstance(src, dict) else None
+            guardian = isinstance(spawned, dict) and spawned.get("other") == "guardian"
+            sub = spawned is not None and not guardian
             continue
         if ctx.excluded(cwd):
             return
@@ -70,12 +72,15 @@ def _rollout(ctx, path):
         if t == "item_completed":
             yield from _item(ctx, base, p, sub_start)
         elif t == "function_call":
-            fn_start[p.get("call_id")] = (iso_ms(d["timestamp"]), p.get("name") or "?", p.get("namespace"))
+            start = iso_ms(d.get("timestamp"))
+            if start is not None:
+                fn_start[p.get("call_id")] = (start, p.get("name") or "?", p.get("namespace"))
         elif t == "function_call_output" and p.get("call_id") in fn_start:
             start, name, ns = fn_start.pop(p["call_id"])
-            if start < ctx.since or name in ITEM_COVERED:
+            end = iso_ms(d.get("timestamp"))
+            if end is None or start < ctx.since or name in ITEM_COVERED:
                 continue
-            yield record(**base, id=p["call_id"], ts=start, dur_ms=iso_ms(d["timestamp"]) - start, tool=name,
+            yield record(**base, id=p["call_id"], ts=start, dur_ms=end - start, tool=name,
                          kind=FN_KIND.get(name) or guess_kind(name), detail=ns, timing="derived")
 
 

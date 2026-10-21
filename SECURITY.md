@@ -24,7 +24,8 @@ The plugin ships two Agent Skills, and everything they do happens on your machin
 When your agent runs `agent-tool-call-latency`:
 
 - It reads the local session history of your agent clients (for example `~/.claude/projects/` and `~/.codex/sessions/`) read-only, and never moves, changes or deletes it.
-- It writes call records, summaries and its report only under `~/.cache/agent-tool-call-latency/`. The records keep the commands the agents ran, with anything that looks like a secret masked, and keep only the base name of each working directory.
+- It writes call records, summaries and its report under `~/.cache/agent-tool-call-latency/`. The records keep the commands the agents ran, with anything that looks like a secret masked, and the path of the session file each call came from.
+- To measure client overhead it may run short headless agent sessions under `/tmp/agent-latency-bench/`. They use your model quota and appear in your clients' history; the audit leaves them out of its own measurements.
 - It changes an agent client's configuration, or a repository, only to apply a fix or a hook capture you approved. It backs up a configuration file before editing it, and makes a repository change through that repository's own branch and pull-request workflow.
 - Apart from the pull requests of fixes you approve, it sends nothing anywhere.
 

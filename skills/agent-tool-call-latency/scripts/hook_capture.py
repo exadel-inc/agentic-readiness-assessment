@@ -31,6 +31,13 @@ def pick(payload, field):
     return None
 
 
+def failed(payload):
+    """Claude Code puts a failed result under tool_response; other harnesses report it at the top."""
+    response = payload.get("tool_response") or payload.get("toolResponse")
+    nested = response if isinstance(response, dict) else {}
+    return bool(payload.get("error") or payload.get("is_error") or nested.get("error") or nested.get("is_error"))
+
+
 def main():
     t = int(time.time() * 1000)
     event = sys.argv[1] if len(sys.argv) > 1 else "?"
@@ -58,9 +65,9 @@ def main():
 
     line = {"t": t, "event": event, "agent": opts.get("--agent", "unknown"), "harness": opts.get("--harness"),
             "session": pick(payload, "session"), "id": pick(payload, "id"), "tool": tool,
-            "project": os.path.basename(str(pick(payload, "cwd") or os.getcwd())),
+            "cwd": str(pick(payload, "cwd") or os.getcwd()),
             "command": clip(command, COMMAND_MAX) if command else None,
-            "error": bool(payload.get("error") or payload.get("is_error"))}
+            "error": failed(payload)}
     path = os.environ.get("AGENT_LATENCY_HOOK_LOG") or os.path.expanduser("~/.cache/agent-tool-call-latency/hooks.jsonl")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a") as fh:

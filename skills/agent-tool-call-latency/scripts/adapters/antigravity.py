@@ -12,9 +12,8 @@ validator warns: an unknown schema can shift between releases.
 import glob
 import json
 import os
-import sqlite3
 
-from common import guess_kind, record
+from common import each_source, guess_kind, query_ro, record
 
 NAME = "antigravity"
 AGENT = "Antigravity"
@@ -75,42 +74,43 @@ def detect(ctx):
 
 
 def records(ctx):
-    for path in _dbs(ctx):
-        harness = ROOTS[os.path.basename(os.path.dirname(os.path.dirname(path)))]
-        db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    return each_source(NAME, _dbs(ctx), lambda path: _conversation(ctx, path))
+
+
+def _conversation(ctx, path):
+    harness = ROOTS[os.path.basename(os.path.dirname(os.path.dirname(path)))]
+    rows = query_ro(path, "select idx, status, metadata from steps where metadata is not null")
+    session = os.path.splitext(os.path.basename(path))[0]
+    for idx, status, meta in rows:
         try:
-            rows = db.execute("select idx, status, metadata from steps where metadata is not null").fetchall()
-        finally:
-            db.close()
-        session = os.path.splitext(os.path.basename(path))[0]
-        for idx, status, meta in rows:
-            try:
-                m = _fields(meta)
-                if 4 not in m or 6 not in m or 8 not in m:
-                    continue
-                call = _fields(m[4][0])
-                start, end = _ms(m[6][0]), _ms(m[8][0])
-                statuses = [_fields(e).get(1, [0])[0] for e in _fields(m[26][0]).get(1, [])] if 26 in m else []
-            except (ValueError, IndexError):
+            m = _fields(meta)
+            if 4 not in m or 6 not in m or 8 not in m:
                 continue
-            if start < ctx.since:
-                continue
-            name = call.get(2, [b"?"])[0].decode(errors="replace")
-            try:
-                args = json.loads(call.get(3, [b"{}"])[0].decode(errors="replace"))
-            except ValueError:
-                args = {}
-            args = args if isinstance(args, dict) else {}
-            kind = KINDS.get(name) or ("mcp" if name.startswith("mcp_") else guess_kind(name))
-            cwd = str(args.get("Cwd") or args.get("cwd") or "")
-            fields = dict(agent=AGENT, harness=harness, session=session,
-                          id=call.get(1, [str(idx).encode()])[0].decode(errors="replace"), ts=start,
-                          dur_ms=max(0, end - start), tool=name, kind=kind, error=status not in (3,),
-                          human_wait=9 in statuses,
-                          timing="exact", project=os.path.basename(cwd.rstrip("/")) or None,
-                          src=f"{path}:steps.idx={idx}", _cwd=cwd)
-            if kind == "shell":
-                fields["command"] = str(args.get("CommandLine") or args.get("command") or "")
-            elif kind == "mcp":
-                fields.update(mcp_server=name.split("_")[1] if "_" in name else name, mcp_tool=name)
-            yield record(**fields)
+            call = _fields(m[4][0])
+            start, end = _ms(m[6][0]), _ms(m[8][0])
+            statuses = [_fields(e).get(1, [0])[0] for e in _fields(m[26][0]).get(1, [])] if 26 in m else []
+        except (ValueError, IndexError):
+            continue
+        if start < ctx.since:
+            continue
+        name = call.get(2, [b"?"])[0].decode(errors="replace")
+        try:
+            args = json.loads(call.get(3, [b"{}"])[0].decode(errors="replace"))
+        except ValueError:
+            args = {}
+        args = args if isinstance(args, dict) else {}
+        kind = KINDS.get(name) or ("mcp" if name.startswith("mcp_") else guess_kind(name))
+        cwd = str(args.get("Cwd") or args.get("cwd") or "")
+        if ctx.excluded(cwd):
+            continue
+        fields = dict(agent=AGENT, harness=harness, session=session,
+                      id=call.get(1, [f"{session}:{idx}".encode()])[0].decode(errors="replace"), ts=start,
+                      dur_ms=max(0, end - start), tool=name, kind=kind, error=status not in (3,),
+                      human_wait=9 in statuses,
+                      timing="exact", project=os.path.basename(cwd.rstrip("/")) or None,
+                      src=f"{path}:steps.idx={idx}", _cwd=cwd)
+        if kind == "shell":
+            fields["command"] = str(args.get("CommandLine") or args.get("command") or "")
+        elif kind == "mcp":
+            fields.update(mcp_server=name.split("_")[1] if "_" in name else name, mcp_tool=name)
+        yield record(**fields)

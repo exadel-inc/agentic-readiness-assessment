@@ -9,7 +9,7 @@
 | `agent` | yes | The tool loop that ran the call: `Claude Code`, `Codex`, `OpenCode`. |
 | `harness` | yes | The surface the user worked in: `Claude Code CLI`, `Codex Desktop`, or `<frontend> → <agent>` when a frontend drives another agent (`T3 Code → Codex`). |
 | `session` | yes | The harness's session or thread id. |
-| `id` | yes | The call id, unique within the agent. Used to drop the copies that resumed or forked sessions write. |
+| `id` | yes | The call id, unique within the agent across all sessions. `extract.py` keeps one record per (`agent`, `id`), so copies from resumed or forked sessions, or from two sources describing one call, count once. Build a fallback id from the session and something unique inside it, never from a per-session counter alone. |
 | `ts` | yes | Start, epoch milliseconds. |
 | `dur_ms` | yes | Start to result, milliseconds, never negative. |
 | `tool` | yes | The harness's own tool name (`Bash`, `exec_command`, `mcp__playwright__browser_click`). |
@@ -17,7 +17,7 @@
 | `command` | shell only | The shell command, secrets masked and clipped to 2,000 characters. The categories are built from it. |
 | `mcp_server`, `mcp_tool` | MCP only | Server and tool names. |
 | `detail` | no | A short hint for spot checks (a file path, a query), clipped to 160 characters. |
-| `project` | no | Basename of the working directory. Full paths stay out of the file. |
+| `project` | no | Basename of the working directory, for grouping. |
 | `error` | no | The call failed or the command exited non-zero. |
 | `background` | no | The call only started work that runs on after it returns. |
 | `human_wait` | no | The duration includes the user answering an approval prompt. |
@@ -26,7 +26,7 @@
 | `approval` | no | How the harness approved this call, in its own words (`classifier`, `mode`, `rule`). |
 | `version` | no | The agent's release, to catch a slow version. |
 | `timing` | no | How `ts` and `dur_ms` were obtained, below. |
-| `src` | no | `path:line` of the raw log line that closed the call, for spot checks. |
+| `src` | no | Absolute `path:line` of the raw log line that closed the call, for spot checks. |
 
 ## Kinds
 

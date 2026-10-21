@@ -18,6 +18,6 @@ Keep it on one line: in an interactive terminal a newline submits the prompt ear
 2. Run the harness headless in each directory: `claude -p --permission-mode <mode> "$PROMPT"` for Claude Code, `codex exec "$PROMPT"` for Codex, the equivalent for others.
 3. Strip the environment you inherit: when the audit itself runs inside an agent, variables such as `CLAUDE_CODE_ENTRYPOINT` change how a child session behaves. Run through `env -i HOME="$HOME" USER="$USER" PATH="$PATH" SHELL="$SHELL" TERM=xterm-256color LANG=en_US.UTF-8 …`.
 4. Change one thing between configurations. A benchmark is a long-running command: start it in the background and wait for its completion.
-5. Extract only the benchmark: `extract.py --only <adapter> --out bench.jsonl`, then compare p50 per step type between the configurations' projects. Re-run the main extraction with `--exclude-cwd /agent-latency-bench/` so these sessions never count as the user's work.
+5. Extract only the benchmark: `extract.py --only <adapter> --since <today> --include-cwd /agent-latency-bench/ --out <work directory>/bench.jsonl`, then compare p50 per step type between the configurations' projects. The main extraction passes `--exclude-cwd /agent-latency-bench/`, so these sessions never count as the user's work.
 
 Done when each configuration's 25 calls are present in `bench.jsonl` and the p50 difference for the step type in question is stated with both values.

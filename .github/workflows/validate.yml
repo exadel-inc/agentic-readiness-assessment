@@ -39,8 +39,21 @@ jobs:
           print(f"all manifests at {canonical}")
           PY
 
-      - name: The skill is where every client looks for it
-        run: test -f skills/agentic-readiness-assessment/SKILL.md
+      - name: The skills are where every client looks for them
+        run: |
+          test -f skills/agentic-readiness-assessment/SKILL.md
+          test -f skills/agent-tool-call-latency/SKILL.md
+
+  tests:
+    name: Skill script tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run each skill's tests
+        run: |
+          for t in skills/*/tests; do
+            python3 -m unittest discover -s "$t"
+          done
 
   claude:
     name: claude plugin validate

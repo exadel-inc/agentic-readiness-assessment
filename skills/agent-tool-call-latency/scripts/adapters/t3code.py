@@ -55,4 +55,4 @@ def claims(ctx):
                   file=sys.stderr)
         finally:
             db.close()
-    yield dict(frontend=FRONTEND, cwd="/.t3/worktrees/")
+    yield dict(frontend=FRONTEND, cwd="/.t3/worktrees/", agents=("Claude Code", "Codex"))

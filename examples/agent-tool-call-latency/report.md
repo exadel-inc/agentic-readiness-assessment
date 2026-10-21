@@ -2,7 +2,7 @@
 
 ## 1. Verdict
 
-Agents on this machine spent **282 hours in tool calls over 30 days** (120,896 calls), and **between 45 and 74 of those hours were waste**: time an agent sat blocked, queued or waiting for an approval instead of doing work. The rest is real work, mostly 3D asset builds, end-to-end suites and benchmarks. The largest waste was foreground wait loops that held the agent's turn until the 10-minute tool cap killed them (F-01, 21.0 h). Three fixes were applied the day before this run, and in the 1.5 days since, no call has reached the cap and no run has queued behind a lock. The largest waste still open is Antigravity commands waiting for approval (F-04, 19.3 h).
+Agents on this machine spent **282 hours in tool calls over 30 days** (120,896 calls), and **between 24 and 53 of those hours were waste**: time an agent sat blocked, queued or re-paying start-up instead of doing work. Another **34 hours were agents waiting on the user**, for approvals and for answers to questions asked while nobody was at the machine. That is not waste but a trait of how this machine is used: agents are often left running unattended. The rest is real work, mostly 3D asset builds, end-to-end suites and benchmarks. The largest waste was foreground wait loops that held the agent's turn until the 10-minute tool cap killed them (F-01, 21.0 h). Three fixes were applied the day before this run, and in the 1.5 days since, no call has reached the cap and no run has queued behind a lock. The largest waste still open is screenshot runs that start a fresh browser every time (F-05, part of 11.7 h). The largest open item overall is user wait: Antigravity commands held for an approval nobody needed to give (F-04, 19.3 h).
 
 ## 2. Run and Scope
 
@@ -23,7 +23,8 @@ not_extracted: T3-driven Cursor, Antigravity and Grok sessions over ACP (under 5
 excluded: the audit's own benchmark sessions
 calls: 120,896 after 520 copied-history duplicates were dropped
 tool_hours: 281.9
-waste_hours: 45 to 74
+waste_hours: 24 to 53
+user_wait_hours: 34.3
 fixes: {applied: 3, proposed: 3, needs_investigation: 1}
 work_directory: ~/.cache/agent-tool-call-latency/2026-10-21/
 ```
@@ -34,7 +35,8 @@ work_directory: ~/.cache/agent-tool-call-latency/2026-10-21/
 |---|---|
 | Tool time | The sum of every call's duration. Parallel calls and subagents overlap, so it exceeds wall time. |
 | Need | Time the work itself takes: a build, a suite, a render. |
-| Waste | Time an agent was blocked, queued, waiting for a prompt or re-paying start-up. A fix removes waste without making any check prove less. |
+| Waste | Time an agent was blocked, queued or re-paying start-up. A fix removes waste without making any check prove less. |
+| Waiting on you | Time an agent waited for the user to answer a question or approve a call. Counted in tool time, but neither need nor waste: it shows how closely the agents are watched. |
 | At cap | A call that ended at its tool's timeout, here mostly the 10-minute Bash cap. |
 | Approval path | How the client approved a call: by permission mode, by an allow rule, by a classifier or reviewer model, or by the user. |
 | p50 / p90 | The median and the 90th-percentile duration. |
@@ -60,7 +62,7 @@ Half of all calls returned in under 405 ms; the p90 was 5.9 s, and 4,978 calls (
 | Render / 3D | 57.1 | Need: Blender asset builds and renders are the asset pipeline's output, and 394 of 601 kit builds already build only the changed piece |
 | Tests: e2e / UI | 51.1 | The lock queue is waste (F-02); screenshot start-up is partly waste (F-05); the suites themselves are need |
 | Wait / poll | 42.3 | Waste where a foreground loop held the turn (F-01) |
-| Waiting on you | 34.3 | User time, not tool time: 19.3 h of Antigravity commands waiting for approval (F-04), and 11.1 h of eight questions nobody was there to answer |
+| Waiting on you | 34.3 | Neither need nor waste: agents left running while nobody watched. 19.3 h of Antigravity commands waited for an approval they did not need (F-04), and 11.1 h went to eight questions nobody was there to answer |
 | Scripts & data | 19.0 | Need: one-off inline scripts with a 0.6 s median |
 | Read & search | 17.7 | Partly waste: the approval check on cheap commands (F-03) |
 | Tests: unit / types / build | 16.4 | Need |
@@ -75,12 +77,12 @@ Each shell command is named by its heaviest step, so `mkdir -p out && blender -b
 | ID | Waste in the window | Owner | Status | The next audit shows it worked when |
 |---|---|---|---|---|
 | F-01 | 21.0 h of calls killed at the 10-minute cap | agent environment | Applied 2026-10-20 | *Calls ending at a timeout cap* has no Bash row |
-| F-02 | up to 17.1 h of lock-wrapped runs beyond F-01's | repository | Applied 2026-10-20 | *lock-wrapped run* is gone from the patterns |
+| F-02 | up to 17.1 h of lock-wrapped runs beyond F-01's | repository | Applied 2026-10-20 | No *lock-wrapped run* in the desktop app |
 | F-03 | 876 ms against 78 ms per read-only command; about 2.4 h | agent environment | Applied 2026-10-20 | The `classifier` rows shrink to compound commands and interpreters |
-| F-04 | 19.3 h of commands waiting for approval | agent environment | Proposed | Antigravity's approval waits keep only commands outside the allow list |
+| F-04 | none; 19.3 h of user wait on commands that needed no approval | agent environment | Proposed | Antigravity's approval waits keep only commands outside the allow list |
 | F-05 | part of 11.7 h of screenshot runs | repository | Proposed | Screenshot calls per session drop while hours per sweep fall |
 | F-06 | 0.65 h of reviewer turns | agent environment | Proposed | Reviewer turns drop by the safe commands' share |
-| F-07 | 1.9 h of edits waiting for review | agent environment | Needs investigation | Cursor's `outOfWorkspace` waits disappear |
+| F-07 | none; 1.9 h of user wait on edits outside the open folder | agent environment | Needs investigation | Cursor's `outOfWorkspace` waits disappear |
 
 ### F-01
 
@@ -95,12 +97,12 @@ Each shell command is named by its heaviest step, so `mkdir -p out && blender -b
 ### F-02
 
 - **Problem:** Agents in parallel checkouts of a desktop app queued their end-to-end runs behind one global lock.
-- **Evidence:** 917 lock-wrapped runs, 21.9 h, p50 1.2 s and p90 5.1 min: most went straight through, and the rest waited for another checkout's run. 704 in the desktop app, 151 in a 3D game. 29 hit the cap (4.8 h, counted in F-01).
+- **Evidence:** 917 lock-wrapped runs, 21.9 h, p50 1.2 s and p90 5.1 min: most went straight through, and the rest waited for another checkout's run. 704 in the desktop app, 151 in a 3D game, 62 elsewhere. 29 hit the cap (4.8 h, counted in F-01).
 - **Cause:** confirmed in the repository: its harness used fixed debug ports (9222, 9333, 9400+, 9450+), so two checkouts refused each other's ports, and agents serialised themselves with `lockf` on three lock files under `/tmp/`.
 - **Fix:** per-checkout port blocks derived from the worktree path, and an agent instruction not to lock (`AGENTS.md:16`).
 - **Owner:** repository.
 - **Status:** applied, merged 2026-10-20. No lock-wrapped run in that repository since.
-- **Verify:** *lock-wrapped run* is gone from *Patterns by total time*.
+- **Verify:** *lock-wrapped run* in *Patterns by total time* no longer lists the desktop app. The 3D game's 151 runs were not part of this fix.
 
 ### F-03
 
@@ -214,7 +216,7 @@ Not measured:
 | `sqlite3` read-only queries on Cursor's and Antigravity's stores | tool-call fields, timestamps and the approval state located |
 | `extract.py --since 2026-09-21 --exclude-cwd … --adapter cursor.py --adapter antigravity.py --out calls.jsonl` | 120,896 calls after 520 duplicates, in 30 s |
 | `validate_calls.py calls.jsonl` | 0 invalid, 0 duplicate records |
-| `aggregate.py calls.jsonl --patterns patterns.json` | 281.9 h; 5 patterns added for unnamed families above 1 h |
+| `aggregate.py calls.jsonl --out-dir . --patterns patterns.json` | 281.9 h; 5 patterns added for unnamed families above 1 h |
 | `extract.py` with the shipped adapters only | 120,919 calls, 281.93 h: the same totals, plus this session's latest calls |
 
 ## 11. Corrections to CAUSES.md

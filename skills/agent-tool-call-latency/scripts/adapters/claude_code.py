@@ -6,7 +6,7 @@ import glob
 import json
 import os
 
-from common import iso_ms, read_jsonl, record
+from common import each_source, iso_ms, read_jsonl, record
 
 NAME = "claude-code"
 AGENT = "Claude Code"
@@ -29,8 +29,7 @@ def detect(ctx):
 
 
 def records(ctx):
-    for path in _files(ctx):
-        yield from _session(ctx, path)
+    return each_source(NAME, _files(ctx), lambda path: _session(ctx, path))
 
 
 def _session(ctx, path):
@@ -44,15 +43,15 @@ def _session(ctx, path):
         if d.get("permissionMode"):
             mode = d["permissionMode"]
         msg, ts = d.get("message"), d.get("timestamp")
-        if not ts or not isinstance(msg, dict) or not isinstance(msg.get("content"), list):
-            continue
         t = iso_ms(ts)
+        if t is None or not isinstance(msg, dict) or not isinstance(msg.get("content"), list):
+            continue
         if d.get("type") == "assistant" and msg.get("id"):
             msg_end[msg["id"]] = max(msg_end.get(msg["id"], 0), t)
         for b in msg["content"]:
             if not isinstance(b, dict):
                 continue
-            if b.get("type") == "tool_use":
+            if b.get("type") == "tool_use" and b.get("id"):
                 uses[b["id"]] = (t, b.get("name") or "?", b.get("input") or {}, mode, d.get("version"), msg.get("id"))
             elif b.get("type") == "tool_result" and b.get("tool_use_id") in uses:
                 results.append((b["tool_use_id"], t, b.get("is_error"), d.get("permissionDecision"), n))

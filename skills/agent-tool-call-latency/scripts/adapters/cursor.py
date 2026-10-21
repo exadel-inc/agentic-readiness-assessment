@@ -7,9 +7,8 @@ approval) has `toolFormerData.additionalData.reviewData`.
 """
 import json
 import os
-import sqlite3
 
-from common import guess_kind, record
+from common import guess_kind, query_ro, record
 
 NAME = "cursor"
 AGENT = "Cursor"
@@ -33,20 +32,17 @@ def records(ctx):
     path = _db(ctx)
     if not os.path.exists(path):
         return
-    db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    try:
-        rows = db.execute(
-            "select key, value from cursorDiskKV where key like 'bubbleId:%' and json_valid(value) "
-            "and json_extract(value, '$.toolFormerData.name') is not null "
-            "and json_extract(value, '$.startedAtMs') >= ? and json_extract(value, '$.completedAtMs') is not null",
-            (int(ctx.since),))
-        for key, value in rows:
-            yield from _call(path, key, json.loads(value))
-    finally:
-        db.close()
+    rows = query_ro(
+        path,
+        "select key, value from cursorDiskKV where key like 'bubbleId:%' and json_valid(value) "
+        "and json_extract(value, '$.toolFormerData.name') is not null "
+        "and json_extract(value, '$.startedAtMs') >= ? and json_extract(value, '$.completedAtMs') is not null",
+        (int(ctx.since),))
+    for key, value in rows:
+        yield from _call(ctx, path, key, json.loads(value))
 
 
-def _call(path, key, b):
+def _call(ctx, path, key, b):
     t = b["toolFormerData"]
     extra = t.get("additionalData") if isinstance(t.get("additionalData"), dict) else {}
     try:
@@ -58,6 +54,8 @@ def _call(path, key, b):
     kind = KINDS.get(name) or ("mcp" if name.startswith("mcp-") else guess_kind(name))
     paths = (params.get("requestedSandboxPolicy") or {}).get("additionalReadwritePaths") or []
     cwd = params.get("cwd") or (paths[0] if paths else "")
+    if ctx.excluded(cwd):
+        return
     fields = dict(agent=AGENT, harness="Cursor", session=key.split(":")[1], id=t.get("toolCallId") or b.get("bubbleId"),
                   ts=b["startedAtMs"], dur_ms=max(0, b["completedAtMs"] - b["startedAtMs"]), tool=name, kind=kind,
                   error=t.get("status") not in ("completed", None) or extra.get("status") == "error",

@@ -176,9 +176,9 @@ The skill:
 5. **Applies the fixes you approve**: each config file is backed up first, and each repository change goes through that repository's own workflow.
 6. **Writes a report** to `~/.cache/agent-tool-call-latency/<date>/report.md`.
 
-[`examples/agent-tool-call-latency/report.md`](examples/agent-tool-call-latency/report.md) is a full run on a developer laptop: 120,896 calls and 282 hours of tool time in 30 days across five clients, of which 45 to 74 hours were waste.
+[`examples/agent-tool-call-latency/report.md`](examples/agent-tool-call-latency/report.md) is a full run on a developer laptop: 120,896 calls and 282 hours of tool time in 30 days across five clients. Between 24 and 53 of those hours were waste, and another 34 were agents waiting for the user to answer.
 
-It reads session history read-only and never changes or deletes it. The call records it builds keep commands, so calls can be classified, but mask anything that looks like a secret, and keep only the base name of each working directory. Everything stays in `~/.cache/agent-tool-call-latency/`. The scripts need Python 3.9 or later and use the standard library only.
+It reads session history read-only and never changes or deletes it. The call records it builds keep commands, so calls can be classified, with anything that looks like a secret masked, and point back to the session file each call came from. Records, summaries and the report go to `~/.cache/agent-tool-call-latency/`; overhead benchmarks run short headless agent sessions under `/tmp/agent-latency-bench/`. The scripts need Python 3.9 or later and use the standard library only.
 
 ## System Requirements
 
@@ -189,7 +189,7 @@ It reads session history read-only and never changes or deletes it. The call rec
 ## Data handling and privacy
 
 - The readiness assessment performs read-only analysis of the repository in the current working directory.
-- `agent-tool-call-latency` reads your agent clients' local session history read-only, and writes only under `~/.cache/agent-tool-call-latency/`. It changes a client's configuration or a repository only to apply a fix or a hook capture that you approved.
+- `agent-tool-call-latency` reads your agent clients' local session history read-only, and writes its records and report under `~/.cache/agent-tool-call-latency/`. Its overhead benchmarks run headless agent sessions under `/tmp/agent-latency-bench/`, which use your model quota and appear in your clients' history. It changes a client's configuration or a repository only to apply a fix or a hook capture that you approved.
 - No repository contents are transmitted to any external service by the plugin itself. Your agent client's own model requests are subject to that client's privacy policy.
 - The plugin contains no credentials and requires none.
 
@@ -223,7 +223,7 @@ Bump it as follows:
 
 Scores are directly comparable across reports sharing the same `MAJOR.MINOR`. A minor bump may shift scores, so compare across one with care; a major bump breaks the contract, so do not compare across it at all.
 
-A change to `agent-tool-call-latency` leaves readiness reports comparable, so it is a patch bump.
+A change to `agent-tool-call-latency` leaves readiness reports comparable, so it is a patch bump. Latency reports record the same version as `plugin_version`; a change to their sections is called out in [CHANGELOG.md](CHANGELOG.md).
 
 Describe what changed in the commit message and in [CHANGELOG.md](CHANGELOG.md), not inside `SKILL.md`. The revision history lives in git:
 
