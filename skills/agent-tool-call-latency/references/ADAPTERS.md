@@ -1,6 +1,6 @@
 # Adapters
 
-An adapter turns one harness's history into [call records](SCHEMA.md). The built-in ones in `scripts/adapters/` cover Claude Code, Codex, T3 Code and the hook log; they are also the worked examples for writing a new one. Put a new adapter in the audit's work directory and load it with `extract.py --adapter <file>`, so the skill folder stays unchanged.
+An adapter turns one harness's history into [call records](SCHEMA.md). The built-in ones in `scripts/adapters/` cover Claude Code, Codex, T3 Code, Cursor, Antigravity and the hook log; they are also the worked examples for writing a new one. `antigravity.py` shows how to read a store with no published schema (protobuf blobs in SQLite) and record what the fields were found to mean. Put a new adapter in the audit's work directory and load it with `extract.py --adapter <file>`, so the skill folder stays unchanged.
 
 ## Interface
 

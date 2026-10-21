@@ -27,7 +27,11 @@ Work in `~/.cache/agent-tool-call-latency/<today>/` (the **work directory**); `<
 2. Find the harnesses they miss. Check the installed agent CLIs and apps (`ls /Applications`, `command -v` for agent CLIs, dot-directories in `~` that hold sessions), and keep those whose history changed inside the window.
 3. Write an adapter for each one, following [ADAPTERS.md](references/ADAPTERS.md), into `<work directory>/adapters/`.
 
-Done when every harness with history in the window has an adapter that meets [ADAPTERS.md § Done when](references/ADAPTERS.md#done-when), or a recorded reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4.
+Done when every harness with history in the window has one of:
+
+- an adapter that meets [ADAPTERS.md § Done when](references/ADAPTERS.md#done-when);
+- a recorded reason it cannot be measured (for example, no per-call timestamps), which becomes a hook-capture proposal in phase 4;
+- a recorded call count under 1% of the other harnesses' calls, which the report lists under *Not measured*.
 
 ## Phase 2: Measure
 
@@ -36,7 +40,7 @@ Done when every harness with history in the window has an adapter that meets [AD
 3. Aggregate: `python3 <skill>/scripts/aggregate.py <work directory>/calls.jsonl --out-dir <work directory>` and read `summary.md`.
 4. Name the unnamed buckets. For each family in *Unnamed shell commands* above 1 h, read its commands, add a `[category, label, regex]` row to `<work directory>/patterns.json`, and re-run step 3 with `--patterns`.
 
-Done when no unnamed command family above 1 h is left.
+Done when every family above 1 h is named by a pattern, or explained in one line of the report (for example, one-off inline scripts with a sub-second median).
 
 ## Phase 3: Diagnose
 
@@ -72,7 +76,7 @@ Write `<work directory>/report.md`; if the user's instructions set a visual styl
 
 1. **Headline:** tool time in the window, the hours the fixes recover, and the top three fixes.
 2. **Where the time goes:** the harness and category tables, trimmed to the rows a fix or a verdict refers to.
-3. **Fixes, ranked:** for each, where it applies, hours per month, the evidence, how the cause was confirmed, the change, its owner, its status (applied, approved, declined), and the row of the next audit that will show whether it worked.
+3. **Fixes, ranked:** for each, where it applies, hours per month, the evidence, how the cause was confirmed, the change, its owner, its status (applied, approved, proposed, needs investigation, declined), and the row of the next audit that will show whether it worked.
 4. **Ruled out:** each cause checked and rejected, one line with its evidence.
 5. **Not measured:** harnesses or periods without timing, and which conclusions that leaves uncertain.
 6. **Corrections to CAUSES.md:** entries this run confirmed (new date), corrected, or added, written as replacement text.

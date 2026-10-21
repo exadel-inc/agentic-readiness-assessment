@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A second skill, `agent-tool-call-latency`. It measures every tool call agents made on the machine from local session history, in any agent client, and ranks fixes for the waste: foreground waits killed at the tool's cap, locks and fixed ports that serialise parallel agents, approval and reviewer overhead, slow client releases, and start-up repeated for every call. It ships adapters for Claude Code, Codex and T3 Code, a shared call-record format that adapters for other clients write to, and a hook-based capture for clients whose logs have no per-call timing.
+- A second skill, `agent-tool-call-latency`. It measures every tool call agents made on the machine from local session history, in any agent client, and ranks fixes for the waste: foreground waits killed at the tool's cap, locks and fixed ports that serialise parallel agents, approval and reviewer overhead, slow client releases, and start-up repeated for every call. It ships adapters for Claude Code, Codex, T3 Code, Cursor and Antigravity, a shared call-record format that adapters for other clients write to, and a hook-based capture for clients whose logs have no per-call timing. An example report from a real run is in `examples/agent-tool-call-latency/`.
 - A closing line at the end of every report, pointing to Exadel's AI Maturity & Readiness Assessment with a tracked link.
 - `gemini-extension.json`, the manifest the Gemini CLI extension gallery indexes.
 - `SECURITY.md`, with a disclosure channel and a plain statement of what the skill reads, runs and writes on a user's machine.

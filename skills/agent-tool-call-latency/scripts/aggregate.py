@@ -187,17 +187,20 @@ def main():
         for c in calls:
             if pred(c) and not c.get("human_wait") and not c.get("background"):
                 cells[(c["harness"], c.get("mode") or "—", c.get("approval") or "—")].append(c["dur_ms"])
-                vcells[(c["agent"], c.get("version") or "—")].append(c["dur_ms"])
+                vcells[(c["agent"], c.get("approval") or "—", c.get("version") or "—")].append(c["dur_ms"])
         for (h, mode, approval), d in sorted(cells.items()):
             if len(d) >= 20:
                 overhead.append(dict(op=op, harness=h, mode=mode, approval=approval, n=len(d), p50=q(d, .5), p90=q(d, .9)))
-        rows = [dict(op=op, agent=a, version=v, n=len(d), p50=q(d, .5)) for (a, v), d in vcells.items() if len(d) >= 20]
-        for agent in {r["agent"] for r in rows}:
-            mine = [r for r in rows if r["agent"] == agent]
+        # A release whose calls went through a slower approval path more often looks slow when
+        # mixed; compare releases within one approval path only.
+        rows = [dict(op=op, agent=a, approval=ap, version=v, n=len(d), p50=q(d, .5))
+                for (a, ap, v), d in vcells.items() if len(d) >= 20]
+        for key in {(r["agent"], r["approval"]) for r in rows}:
+            mine = [r for r in rows if (r["agent"], r["approval"]) == key]
             typical = statistics.median(r["p50"] for r in mine)
             for r in mine:
                 r["outlier"] = len(mine) >= 3 and r["p50"] >= 3 * typical and r["p50"] - typical >= 200
-        versions += sorted(rows, key=lambda r: (r["agent"], r["version"]))
+        versions += sorted(rows, key=lambda r: (r["agent"], r["approval"], r["version"]))
     out["fast_op_overhead"] = overhead
     out["fast_op_by_version"] = versions
 
@@ -250,7 +253,8 @@ def render(o):
         ("p90", lambda r: f"{r['p90']:.0f} ms")]))
     outliers = [r for r in o["fast_op_by_version"] if r.get("outlier")]
     md.append("## Releases where cheap operations were slow\n\n" + (table(outliers, [
-        ("Operation", lambda r: r["op"]), ("Agent", lambda r: r["agent"]), ("Version", lambda r: r["version"]),
+        ("Operation", lambda r: r["op"]), ("Agent", lambda r: r["agent"]), ("Approval", lambda r: r["approval"]),
+        ("Version", lambda r: r["version"]),
         ("Calls", lambda r: r["n"]), ("p50", lambda r: f"{r['p50']:.0f} ms")]) if outliers else "None.\n"))
     if o["mcp_servers"]:
         md.append("## MCP servers\n\n" + table(o["mcp_servers"][:15], [

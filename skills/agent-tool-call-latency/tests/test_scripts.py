@@ -78,6 +78,12 @@ class Helpers(unittest.TestCase):
         self.assertNotIn("ghp_", out)
         self.assertIn("gh pr list", out)
 
+    def test_redact_masks_a_password_inside_a_url(self):
+        out = redact("DB=postgresql://app:s3cret@localhost:5432/db psql; git clone https://github.com/a/b")
+        self.assertNotIn("s3cret", out)
+        self.assertIn("postgresql://app:[REDACTED]@localhost", out)
+        self.assertIn("https://github.com/a/b", out)
+
     def test_guess_kind(self):
         self.assertEqual(guess_kind("run_terminal_command"), "shell")
         self.assertEqual(guess_kind("str_replace_editor"), "edit")
@@ -173,10 +179,104 @@ class Adapters(unittest.TestCase):
         self.assertIn("kind 'nope'", result.stdout)
 
 
+def pb_varint(n):
+    out = b""
+    while True:
+        byte, n = n & 0x7F, n >> 7
+        out += bytes([byte | (0x80 if n else 0)])
+        if not n:
+            return out
+
+
+def pb(num, value):
+    """One protobuf field: an int becomes a varint, bytes or str a length-delimited value."""
+    if isinstance(value, int):
+        return pb_varint(num << 3) + pb_varint(value)
+    value = value.encode() if isinstance(value, str) else value
+    return pb_varint(num << 3 | 2) + pb_varint(len(value)) + value
+
+
+def pb_time(ms):
+    return pb(1, ms // 1000) + pb(2, ms % 1000 * 1_000_000)
+
+
+class GuiClientAdapters(unittest.TestCase):
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+
+    def extract(self, only):
+        out = os.path.join(self.home, "calls.jsonl")
+        subprocess.run([sys.executable, os.path.join(SCRIPTS, "extract.py"), "--home", self.home, "--since",
+                        "2026-09-01", "--only", only, "--out", out], check=True, capture_output=True)
+        return {c["id"]: c for c in read_jsonl(out)}
+
+    def test_cursor_reads_tool_bubbles_and_review_waits(self):
+        path = os.path.join(self.home, "Library/Application Support/Cursor/User/globalStorage/state.vscdb")
+        os.makedirs(os.path.dirname(path))
+        db = sqlite3.connect(path)
+        db.execute("create table cursorDiskKV (key text unique on conflict replace, value blob)")
+        shell = dict(startedAtMs=1790000000000, completedAtMs=1790000003500, toolFormerData=dict(
+            name="run_terminal_command_v2", toolCallId="toolu_1", status="completed",
+            params=json.dumps(dict(command="pnpm test", requestedSandboxPolicy=dict(additionalReadwritePaths=["/w/app"]))),
+            additionalData=dict(status="success")))
+        edit = dict(startedAtMs=1790000010000, completedAtMs=1790000130000, toolFormerData=dict(
+            name="edit_file_v2", toolCallId="toolu_2", status="completed", params="{}",
+            additionalData=dict(blockReason="outOfWorkspace", reviewData=dict(selectedOption="accept"))))
+        for key, value in [("bubbleId:c1:b1", shell), ("bubbleId:c1:b1/t:toolu_1", shell), ("bubbleId:c1:b2", edit)]:
+            db.execute("insert into cursorDiskKV values (?, ?)", (key, json.dumps(value)))
+        db.commit()
+        db.close()
+        calls = self.extract("cursor")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual((calls["toolu_1"]["kind"], calls["toolu_1"]["dur_ms"], calls["toolu_1"]["project"]),
+                         ("shell", 3500, "app"))
+        self.assertTrue(calls["toolu_2"]["human_wait"])
+        self.assertEqual(calls["toolu_2"]["approval"], "outOfWorkspace")
+
+    def test_antigravity_decodes_steps_and_flags_approval_waits(self):
+        path = os.path.join(self.home, ".gemini/antigravity/conversations/conv-1.db")
+        os.makedirs(os.path.dirname(path))
+        db = sqlite3.connect(path)
+        db.execute("create table steps (idx integer primary key, step_type integer, status integer, metadata blob)")
+        start = 1790000000000
+
+        def step(call_id, name, args, end, statuses):
+            history = b"".join(pb(1, pb(1, st) + pb(2, pb_time(t))) for st, t in statuses)
+            return (pb(1, pb_time(start)) + pb(4, pb(1, call_id) + pb(2, name) + pb(3, json.dumps(args)))
+                    + pb(6, pb_time(start)) + pb(8, pb_time(end)) + pb(26, history))
+
+        db.execute("insert into steps values (1, 132, 3, ?)", (step("call_1", "run_command", dict(CommandLine="find . -maxdepth 1", Cwd="/w/app"),
+                                                                    start + 300_000, [(1, start), (9, start + 100), (3, start + 300_000)]),))
+        db.execute("insert into steps values (2, 132, 3, ?)", (step("call_2", "view_file", {}, start + 20, [(1, start), (3, start + 20)]),))
+        db.execute("insert into steps values (3, 15, 3, ?)", (pb(1, pb_time(start)),))  # a model turn, no tool call
+        db.commit()
+        db.close()
+        calls = self.extract("antigravity")
+        self.assertEqual(set(calls), {"call_1", "call_2"})
+        self.assertEqual((calls["call_1"]["kind"], calls["call_1"]["dur_ms"], calls["call_1"]["command"]),
+                         ("shell", 300_000, "find . -maxdepth 1"))
+        self.assertTrue(calls["call_1"]["human_wait"])
+        self.assertFalse(calls["call_2"].get("human_wait"))
+        self.assertEqual(calls["call_2"]["kind"], "read")
+
+
 class Aggregate(unittest.TestCase):
     def test_find_cap_spots_a_timeout_cluster(self):
         self.assertEqual(aggregate.find_cap([1000, 70_000, 600_100, 600_400, 601_000]), (600_100, 3))
         self.assertIsNone(aggregate.find_cap([70_000, 200_000, 600_000]))
+
+    def test_release_table_compares_within_one_approval_path(self):
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "calls.jsonl")
+        rows = []
+        for version, approval, dur in [("1.0", "mode", 10), ("1.1", "mode", 12), ("1.2", "mode", 11), ("1.3", "classifier", 800)]:
+            rows += [dict(agent="A", harness="H", session="s", id=f"{version}-{i}", ts=1790000000000 + i, dur_ms=dur,
+                          tool="Edit", kind="edit", version=version, approval=approval) for i in range(20)]
+        write_jsonl(path, rows)
+        subprocess.run([sys.executable, os.path.join(SCRIPTS, "aggregate.py"), path, "--out-dir", d], check=True,
+                       capture_output=True)
+        summary = json.loads(read_text(os.path.join(d, "summary.json")))
+        self.assertEqual([r for r in summary["fast_op_by_version"] if r.get("outlier")], [])
 
     def test_classify_puts_heavy_steps_before_setup(self):
         patterns = [(c, l, aggregate.re.compile(p)) for c, l, p in aggregate.SHELL_PATTERNS]

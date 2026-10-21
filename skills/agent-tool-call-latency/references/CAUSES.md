@@ -37,7 +37,7 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 
 - **Signal:** *Releases where cheap operations were slow*.
 - **Cause:** a regression in one release. In those three releases an edit took about 1 s; other releases took about 50 ms, and 2.1.303 took 22 ms.
-- **Confirm:** the same operation in the same mode is fast in neighbouring releases. Mode differences can mimic a slow release, so compare within one mode.
+- **Confirm:** the same operation, through the same approval path and on the same surface, is fast in neighbouring releases. *Releases where cheap operations were slow* compares within one approval path; a surface with heavy hooks or a slower approval path can still make a release look slow (Claude Code 2.1.304 on 2026-10-21 was both, and was not a slow release).
 - **Fix (agent environment):** upgrade, or pin a known-good release until a fix ships.
 
 ## An automatic reviewer holds each escalated action
@@ -48,6 +48,24 @@ Every fix removes **waste**: queueing, overhead, repeated start-up, killed and r
 - **Cause:** every action that needs escalation outside the sandbox waits for a reviewer model's turn.
 - **Confirm:** list which actions were reviewed. Each reviewer session's prompt carries the action as `Planned action JSON: {...}`; count them by command family.
 - **Fix (agent environment):** a `prefix_rule(pattern=[...], decision="allow")` in `~/.codex/rules/*.rules` runs a matching command outside the sandbox without review. Linear `bash -lc` chains are split and each part must match. For MCP tools, `[mcp_servers.<server>.tools.<tool>] approval_mode = "approve"` in `config.toml`. Keep reviewing tools that run arbitrary code (a JavaScript REPL, a browser `evaluate`): the reviewer is their only check.
+
+## Hooks on every call
+
+*Confirmed 2026-10-21, Claude Code.*
+
+- **Signal:** one surface or project whose cheap operations (reads, edits) cost hundreds of milliseconds more than the same release elsewhere.
+- **Cause:** a chain of pre-tool and post-tool hooks in that project's settings runs on every call. A workflow-engine demo project ran 5 PreToolUse and 3 PostToolUse hooks per edit: 676 ms per edit against 12 ms on the same release elsewhere.
+- **Confirm:** list the hooks and their matchers in the project's agent settings, and compare the same operation in a session of that project with one elsewhere.
+- **Fix (repository):** narrow each hook's matcher to the tools that need it, or make the hook cheaper.
+
+## An approval prompt nobody is watching
+
+*Confirmed 2026-10-21, Antigravity and Cursor.*
+
+- **Signal:** *Waiting on you: approval prompt* with waits of minutes to hours, on commands that only read.
+- **Cause:** the client stops a read-only command, or an edit outside the folder it has open, until the user approves it, and the agent's run stands still meanwhile. In Antigravity a step that waited passes through status 9 in its status history; in Cursor the call carries `reviewData` and a `blockReason` such as `outOfWorkspace`.
+- **Confirm:** read the waiting commands; a `find` or `git status` that took minutes waited for a person.
+- **Fix (agent environment):** add read-only prefixes to the client's allow list (Antigravity: Settings > General > Permission Settings, or per project; its Allow, Deny and Ask rules take precedence over the permission preset). For edits outside the open folder, open the worktree itself.
 
 ## Start-up repeated for every call
 

@@ -169,12 +169,14 @@ Ask for it by name: `/agent-tool-call-latency` in Claude Code, `$agent-tool-call
 
 The skill:
 
-1. **Takes inventory** of the agent clients on the machine and their local session history. Claude Code, Codex and T3 Code are read by built-in adapters. For any other client the agent writes an adapter to one shared call-record format, and checks that adapter against the client's raw log. A client whose history carries no per-call timing can be recorded live through its pre-tool and post-tool hooks.
+1. **Takes inventory** of the agent clients on the machine and their local session history. Claude Code, Codex, T3 Code, Cursor and Antigravity are read by built-in adapters. For any other client the agent writes an adapter to one shared call-record format, and checks that adapter against the client's raw log. A client whose history carries no per-call timing can be recorded live through its pre-tool and post-tool hooks.
 2. **Measures** every call: time by client, category and command pattern, calls ending at a timeout cap, cheap operations compared across clients, permission modes and releases, and automatic-review time.
 3. **Diagnoses** each large pattern, separating the time the work needs from the time it wastes, and confirms each cause on the machine with a benchmark, the client's documentation or the line of code responsible.
 4. **Stops for your decisions**, with fixes ranked by the hours they recover each month and grouped by owner: the repository, the agent environment or the client vendor.
 5. **Applies the fixes you approve**: each config file is backed up first, and each repository change goes through that repository's own workflow.
 6. **Writes a report** to `~/.cache/agent-tool-call-latency/<date>/report.md`.
+
+[`examples/agent-tool-call-latency/report.md`](examples/agent-tool-call-latency/report.md) is a full run on a developer laptop: 120,896 calls and 282 hours of tool time in 30 days across five clients, of which 45 to 74 hours were waste.
 
 It reads session history read-only and never changes or deletes it. The call records it builds keep commands, so calls can be classified, but mask anything that looks like a secret, and keep only the base name of each working directory. Everything stays in `~/.cache/agent-tool-call-latency/`. The scripts need Python 3.9 or later and use the standard library only.
 
