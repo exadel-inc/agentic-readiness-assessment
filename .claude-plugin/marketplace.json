@@ -10,12 +10,13 @@
     {
       "name": "agentic-readiness-assessment",
       "source": "./",
-      "description": "Evaluates a repository's readiness for AI coding agents and produces an evidence-based scorecard.",
+      "description": "Evaluates a repository's readiness for AI coding agents and produces an evidence-based scorecard. Also audits how much agent run time goes to slow tool calls.",
       "category": "development",
       "tags": [
         "agentic-readiness",
         "codebase-analysis",
-        "assessment"
+        "assessment",
+        "agent-latency"
       ],
       "homepage": "https://github.com/exadel-inc/agentic-readiness-assessment",
       "repository": "https://github.com/exadel-inc/agentic-readiness-assessment",
