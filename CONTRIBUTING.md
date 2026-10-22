@@ -7,6 +7,7 @@ Contributions are welcome, whether that is a bug report, a proposed change to th
 This repository is one plugin root shared by Cursor, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application to build or deploy. The substance is:
 
 - `skills/agentic-readiness-assessment/SKILL.md`, the assessment prompt itself, with its `references/`, `scripts/` and `tests/`
+- `skills/agent-tool-call-latency/`, a second skill that audits agents' tool-call time from local session history, with its adapters, scripts and tests
 - `plugin.json` and the platform manifests under `.claude-plugin/`, `.codex-plugin/` and `gemini-extension.json`
 - `examples/`, real reports produced by the skill
 
@@ -25,9 +26,10 @@ A change to `SKILL.md` changes what every user's report looks like. Read [Versio
 python3 .github/scripts/sync_versions.py --check
 python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
 claude plugin validate . --strict
+for t in skills/*/tests; do python3 -m unittest discover -s "$t"; done
 ```
 
-CI runs the same checks on every pull request. There is no build step and no linter. If your change touches a script the skill ships, run that script's own tests as well.
+CI runs the same checks on every pull request. There is no build step and no linter.
 
 ## Changing the assessment prompt
 
