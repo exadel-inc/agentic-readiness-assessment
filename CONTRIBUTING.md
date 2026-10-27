@@ -4,11 +4,11 @@ Contributions are welcome, whether that is a bug report, a proposed change to th
 
 ## What lives here
 
-This repository is one plugin root shared by Cursor, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application to build or deploy. The substance is:
+This repository is one plugin root shared by Cursor, Google Antigravity, Codex, Claude Code and every client that reads the [Agent Skills](https://agentskills.io/specification) format. There is no application to build or deploy. The substance is:
 
 - `skills/agentic-readiness-assessment/SKILL.md`, the assessment prompt itself, with its `references/`, `scripts/` and `tests/`
 - `skills/agent-tool-call-latency/`, a second skill that audits agents' tool-call time from local session history, with its adapters, scripts and tests
-- `plugin.json` and the platform manifests under `.claude-plugin/`, `.codex-plugin/` and `gemini-extension.json`
+- `plugin.json` and the platform manifests under `.claude-plugin/` and `.codex-plugin/`
 - `examples/`, real reports produced by the skill
 
 A change to `SKILL.md` changes what every user's report looks like. Read [Versioning](README.md#versioning) before you open one, because the version bump depends on whether your change breaks comparability between reports.

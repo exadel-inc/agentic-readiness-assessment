@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic `v<version>` tags and published GitHub releases after validation succeeds on `main`.
 - A dependency-free script that updates or verifies the version across every platform manifest.
 - A repository script for the GitHub tag and release publication performed by CI.
+- Install instructions and a publishing route for Google Antigravity, which reads the root `plugin.json`.
+
+### Removed
+
+- `gemini-extension.json` and the Gemini CLI install instructions. Gemini CLI users move to Google Antigravity; clients that read Agent Skills from the filesystem are unaffected.
 
 ## [4.5.1] - 2026-09-23
 

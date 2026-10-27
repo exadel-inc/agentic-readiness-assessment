@@ -17,7 +17,7 @@ jobs:
 
       - name: Every manifest is valid JSON
         run: |
-          for f in plugin.json gemini-extension.json .codex-plugin/plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+          for f in plugin.json .codex-plugin/plugin.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
             python3 -m json.tool "$f" > /dev/null
             echo "ok $f"
           done

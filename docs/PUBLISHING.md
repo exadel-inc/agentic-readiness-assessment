@@ -1,6 +1,6 @@
 # Publishing
 
-This repository is one plugin root shared by Cursor, Codex, and Claude Code. The implementation stays in `skills/agentic-readiness-assessment/SKILL.md`; each platform-specific manifest only describes that shared skill.
+This repository is one plugin root shared by Cursor, Google Antigravity, Codex, and Claude Code. The implementation stays in `skills/agentic-readiness-assessment/SKILL.md`; each platform-specific manifest only describes that shared skill.
 
 ## Before a release
 
@@ -36,11 +36,21 @@ This repository is one plugin root shared by Cursor, Codex, and Claude Code. The
 
 Merge the synchronized version bump into `main`. After manifest and Claude validation pass, CI creates the `v<version>` tag on that exact `main` commit and publishes a GitHub release with generated notes. Re-running CI is safe: an existing release is skipped, while a tag that points at a different commit fails the job.
 
-## Gemini CLI
+## Google Antigravity
 
-The gallery at [geminicli.com/extensions](https://geminicli.com/extensions/) has no submission form. A crawler indexes public GitHub repositories that carry the `gemini-cli-extension` topic and a root `gemini-extension.json`. Both are in place once this branch merges and the topic is set on the repository.
+Google Antigravity reads the root `plugin.json` manifest and discovers `skills/agentic-readiness-assessment/SKILL.md` directly. Users can install the plugin from GitHub or a local clone with the Antigravity CLI:
 
-Keep `gemini-extension.json`'s `version` in lockstep with `plugin.json`. The automatic GitHub release uses that version with a `v` prefix for its tag.
+```sh
+agy plugin install https://github.com/exadel-inc/agentic-readiness-assessment
+```
+
+Validate the plugin package locally with:
+
+```sh
+agy plugin validate .
+```
+
+For curated listing in the official Antigravity Marketplace (`antigravity-plugins-official`), submit the repository through the [Antigravity Marketplace interest form](https://forms.gle/2EX5RFYPoJe1UgxR9) linked from the [Antigravity Marketplace documentation](https://antigravity.google/docs/marketplace#next-steps).
 
 ## Other clients
 
