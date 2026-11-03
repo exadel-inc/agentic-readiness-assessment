@@ -226,7 +226,3 @@ Not measured:
 - **New, an approval prompt nobody is watching:** a read-only command, or an edit outside the open folder, waits for a user who is not there. Use the client's allow list for read-only prefixes, and open worktrees as workspaces.
 
 Re-run after a week of normal use with `--since 2026-10-21`, comparing *Calls ending at a timeout cap*, *lock-wrapped run*, the `classifier` rows and Antigravity's approval waits.
-
----
-
-This report covers one machine's agents. For the organization-level version, covering people and process as well as code, see Exadel's [AI Maturity & Readiness Assessment](https://exadel.com/services/ai-maturity-readiness-assessment/?utm_source=agent-tool-call-latency&utm_medium=plugin-report&utm_campaign=readiness-test-2026-10).
